@@ -23,6 +23,7 @@ _gui_init() {
     btnNamMoiPhatTai := myGui.AddButton("w200 h30 x10 y220", "Năm Mới Phát Tài")
     btnDaily := myGui.AddButton("w200 h30 x10 y300", "Daily")
     btnAnhHon := myGui.AddButton("w200 h30 x10 y340", "Ảnh hồn")
+    btnTanCongHaiQuan := myGui.AddButton("w200 h30 x10 y380", "Tấn công hải quân")
 
     ; BOSS
     btnPunk := myGui.AddButton("w100 h30 x10 y260", "Rồng Punk")
@@ -40,6 +41,7 @@ _gui_init() {
     btnNamMoiPhatTai.OnEvent("Click", (*) => _feature_nammoiphattai(g_inputCount.Value))
     btnAnhHon.OnEvent("Click", (*) => _feature_anhhon(g_inputCount.Value))
     btnDaily.OnEvent("Click", (*) => _feature_daily())
+    btnTanCongHaiQuan.OnEvent("Click", (*) => _feature_tanconghaiquan())
     
     ; BOSS
     btnPunk.OnEvent("Click", (*) => _feature_punk())

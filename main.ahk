@@ -15,4 +15,8 @@ _gui_init()
 #Include features\nammoiphattai.ahk
 #Include features\daily.ahk
 #Include features\anhhon.ahk
+#Include features\tanconghaiquan.ahk
 
+F4::{
+    _feature_lich_su_kien()
+}

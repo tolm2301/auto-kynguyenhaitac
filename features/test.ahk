@@ -5,7 +5,8 @@ _feature_test() {
     isRunning := true
 
     ; _drag_mouse(hwnd, 418, 331, 767, 301)
-    g_featureText.text := "abc"
+    Sleep 2000
+    _post_with_vk_string(hwnd, "1")
 }
 
 _feature_change_win() {
@@ -35,4 +36,15 @@ _feature_click() {
     }
 
 
+}
+
+_feature_lich_su_kien() {
+      MsgBox "T2: Công xưởng smile(18h30-19h00)`n"
+      . "T3: Hải tặc thông thái (11h55),  Uta world(19h), Closseum(19h45), Tranh bá trên biển(20h15).`n"
+      . "T4: Công xưởng smile(18h30-19h00), Chiến trường(19h45).`n"
+      . "T5: Hải tặc thông thái (11h55),  Uta world(19h), Closseum(19h45), Tranh bá trên biển(20h15).`n"
+      . "T6: Công xưởng smile(18h30-19h00), Wano(19h45).`n"
+      . "T7: Chiến trường(19h45).`n"
+      . "Daily: Punk, Kraken, Kaido, Tầm bảo chiến.`n"
+      , "Sự Kiện Kỷ Nguyên Hải Tặc"
 }
