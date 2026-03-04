@@ -6,7 +6,7 @@ _gui_init() {
 
     myGui := Gui("", "Auto VHT")
 
-    myGui.Icon := A_ScriptDir . "\..\resources\icon.ico"
+    myGui.Icon := A_ScriptDir . "\resources\icon.ico"
     myGui.AddText("x10 y10 w200 h30", "Nhập số lượt:")
     g_inputCount := myGui.AddEdit("w50 h30 vInputCount x100 y10", "1")
     g_featureText := myGui.AddText("x10 y75 w200 h30", "Tính năng đang chạy: Chưa có")
@@ -24,6 +24,7 @@ _gui_init() {
     btnDaily := myGui.AddButton("w200 h30 x10 y300", "Daily")
     btnAnhHon := myGui.AddButton("w200 h30 x10 y340", "Ảnh hồn")
     btnTanCongHaiQuan := myGui.AddButton("w200 h30 x10 y380", "Tấn công hải quân")
+    btnHdTT := myGui.AddButton("w200 h30 x10 y420", "Hỏi đáp có thưởng - Hải Tặc thông thái")
 
     ; BOSS
     btnPunk := myGui.AddButton("w100 h30 x10 y260", "Rồng Punk")
@@ -42,6 +43,7 @@ _gui_init() {
     btnAnhHon.OnEvent("Click", (*) => _feature_anhhon(g_inputCount.Value))
     btnDaily.OnEvent("Click", (*) => _feature_daily())
     btnTanCongHaiQuan.OnEvent("Click", (*) => _feature_tanconghaiquan())
+    btnHdTT.OnEvent("Click", (*) => _feature_hoidapcothuong())
     
     ; BOSS
     btnPunk.OnEvent("Click", (*) => _feature_punk())

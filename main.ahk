@@ -6,6 +6,7 @@ _gui_init()
 #Include utils\window.ahk
 #Include utils\post_message.ahk
 #Include utils\date.ahk
+#Include utils\OCR.ahk
 
 #Include features\enhance.ahk
 #Include features\rakhoi.ahk
@@ -16,6 +17,7 @@ _gui_init()
 #Include features\daily.ahk
 #Include features\anhhon.ahk
 #Include features\tanconghaiquan.ahk
+#Include features\hoidapcothuong.ahk
 
 F4::{
     _feature_lich_su_kien()
