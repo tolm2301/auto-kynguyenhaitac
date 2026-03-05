@@ -19,6 +19,20 @@ _gui_init()
 #Include features\tanconghaiquan.ahk
 #Include features\hoidapcothuong.ahk
 
+F3:: {
+    _win_resize_game()
+    hwnd := _win_get_game()
+    _click_post(hwnd, 135, 177)
+    Sleep 500
+    _click_post(hwnd, 838, 520)
+    Sleep 500
+    _post_with_vk_string(hwnd, "Esc")
+    Sleep 500
+    _post_with_vk_string(hwnd, "Esc")
+    Sleep 500
+    _post_with_vk_string(hwnd, "Esc")
+}
+
 F4::{
     _feature_lich_su_kien()
 }

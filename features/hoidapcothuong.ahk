@@ -24,15 +24,14 @@ _feature_hoidapcothuong() {
 
         ; 3. Làm sạch văn bản quét được
         ScannedText := Result.Text
-        ScannedText := RemoveVNSigns(ScannedText)
         ScannedText := RegExReplace(ScannedText, "\s+", " ")
         ScannedText := Trim(ScannedText)
 
         ; 4. Tìm kiếm tương đồng trong file INI
-        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", "Questions", ScannedText, 0.6) ; Ngưỡng 60%
+        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", "Questions", ScannedText, 0.4) ; Ngưỡng 40%
 
         if (BestMatch.Score > 0) {
-            MsgBox("DÔ GIỐNG: " . Round(BestMatch.Score * 100) . "%`n`nCÂU HỎI QUÉT: " . ScannedText . "`n`nCÂU KHỚP NHẤT: " . BestMatch.Question . "`n`nĐÁP ÁN: " . BestMatch.Answer, "KẾT QUẢ")
+            MsgBox("CÂU HỎI: " . BestMatch.Question . "`n`nĐÁP ÁN: " . BestMatch.Answer, "KẾT QUẢ")
         } else {
             MsgBox("CÂU HỎI: " . ScannedText . "`n`nĐÁP ÁN: CHƯA CÓ TRONG DATA (Độ giống < 60%)", "THÔNG BÁO")
         }
@@ -65,7 +64,6 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
             continue
         
         FileQ := SubStr(A_LoopField, 1, Pos-1)
-        FileQ := RemoveVNSigns(FileQ)
         FileA := SubStr(A_LoopField, Pos+1)
         
         ; Tính độ tương đồng giữa SearchStr và FileQ (0.0 -> 1.0)
@@ -120,21 +118,34 @@ StrDiff(s1, s2) {
 ; --- Các hàm bổ trợ (Giữ nguyên) ---
 RemoveVNSigns(str) {
     static vnsigns := Map(
-        "a", "á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ|ä|å|æ",
+        "a", "á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ",
         "A", "Á|À|Ả|Ã|Ạ|Ă|Ắ|Ằ|Ẳ|Ẵ|Ặ|Â|Ấ|Ầ|Ẩ|Ẫ|Ậ",
-        "d", "đ|ð", "D", "Đ",
-        "e", "é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ|ë",
+
+        "d", "đ",
+        "D", "Đ",
+
+        "e", "é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ",
         "E", "É|È|Ẻ|Ẽ|Ẹ|Ê|Ế|Ề|Ể|Ễ|Ệ",
-        "i", "í|ì|ỉ|ĩ|ị|ï|î", "I", "Í|Ì|Ỉ|Ĩ|Ị",
-        "o", "ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ|ö|ô|ø",
+
+        "i", "í|ì|ỉ|ĩ|ị",
+        "I", "Í|Ì|Ỉ|Ĩ|Ị",
+
+        "o", "ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ",
         "O", "Ó|Ò|Ỏ|Õ|Ọ|Ô|Ố|Ồ|Ổ|Ỗ|Ộ|Ơ|Ớ|Ờ|Ở|Ỡ|Ợ",
-        "u", "ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự|ü|û|w",
+
+        "u", "ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự",
         "U", "Ú|Ù|Ủ|Ũ|Ụ|Ư|Ứ|Ừ|Ử|Ữ|Ự",
-        "y", "ý|ỳ|ỷ|ỹ|ỵ", "Y", "Ý|Ì|Ỷ|Ỹ|Ỵ"
+
+        "y", "ý|ỳ|ỷ|ỹ|ỵ",
+        "Y", "Ý|Ỳ|Ỷ|Ỹ|Ỵ"
     )
+
     for res, signs in vnsigns
-        str := RegExReplace(str, "i)(" . signs . ")", res)
-    str := RegExReplace(str, "[^a-zA-Z0-9\s?]", "")
+        str := RegExReplace(str, signs, res)
+
+    ; giữ chữ, số, khoảng trắng
+    str := RegExReplace(str, "[^a-zA-Z0-9\s]", "")
+    
     return StrLower(str)
 }
 
