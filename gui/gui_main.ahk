@@ -4,7 +4,7 @@ isRunning := false
 _gui_init() {
     global g_inputCount, isRunning, g_featureText
 
-    myGui := Gui("", "Auto VHT")
+    myGui := Gui("+AlwaysOnTop", "Auto VHT")
 
     myGui.Icon := A_ScriptDir . "\resources\icon.ico"
     myGui.AddText("x10 y10 w200 h30", "Nhập số lượt:")
