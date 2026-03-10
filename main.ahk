@@ -37,7 +37,7 @@ F4::{
     _feature_lich_su_kien()
 }
 
-F5::{
+F6::{
     hwnds := _win_get_list()
 
     hwnd_list_string := ""

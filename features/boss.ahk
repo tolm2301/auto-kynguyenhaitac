@@ -64,7 +64,7 @@ _feature_punk() {
 
 _feature_kraken() {
     _win_resize_list()
-    g_featureText.text := "Tính năng đang chạy: Rồng punk"
+    g_featureText.text := "Tính năng đang chạy: Kraken"
     hwnds := _win_get_list()
     global isRunning
     isRunning := true

@@ -34,7 +34,7 @@ _gui_init() {
     btnStop.OnEvent("Click", (*) => _feature_stop())
     btnTest.OnEvent("Click", (*) => _feature_test())
     btnChangeName.OnEvent("Click", (*) => _feature_change_win())
-    btnResize.OnEvent("Click", (*) => _win_resize_game())
+    btnResize.OnEvent("Click", (*) => _win_resize_list())
     
     ; FEATURE
     btnEnhance.OnEvent("Click", (*) => _feature_enhance(g_inputCount.Value))

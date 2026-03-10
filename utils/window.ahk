@@ -32,13 +32,32 @@ _win_get_list() {
 }
 
 _win_resize_list() {
+    ; Cho phép tìm cả cửa sổ đang ẩn (Hidden)
+    DetectHiddenWindows True 
+    
     hwnds := _win_get_list()
-
+    
     for hwnd in hwnds {
-        WinGetPos &winX, &winY, &winWidth, &winHeight, hwnd
-
-        WinActivate hwnd
-        WinMove winX, winY, 1280, 720, hwnd
+        try {
+            ; Lấy vị trí X, Y hiện tại để không làm lệch cửa sổ
+            WinGetPos(&winX, &winY, ,, hwnd)
+            
+            ; Cú pháp DllCall SetWindowPos:
+            ; hWnd, hWndInsertAfter, X, Y, cx (Width), cy (Height), uFlags
+            ; Flag 0x0010 (SWP_NOACTIVATE): Không kích hoạt cửa sổ
+            ; Flag 0x0040 (SWP_SHOWWINDOW): Hiển thị nếu nó đang ẩn (tùy chọn)
+            ; Flag 0x0200 (SWP_NOREPOSITION): Không thay đổi thứ tự Z-order
+            
+            DllCall("User32.dll\SetWindowPos", 
+                "Ptr", hwnd, 
+                "Ptr", 0, 
+                "Int", winX, 
+                "Int", winY, 
+                "Int", 1280, 
+                "Int", 720, 
+                "UInt", 0x0010 | 0x0200
+            )
+        }
     }
 }
 
