@@ -49,5 +49,7 @@ _gui_init() {
     btnPunk.OnEvent("Click", (*) => _feature_punk())
     btnKraken.OnEvent("Click", (*) => _feature_kraken())
 
+    myGui.OnEvent("Close", (*) => ExitApp())
+
     myGui.Show()
 }
