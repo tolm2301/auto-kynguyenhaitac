@@ -45,7 +45,7 @@ _che_do(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 551, 125)
-    Sleep 5000
+    Sleep 15000
     loop Integer(7) {
         _click_post(hwnd, 279, 405)
         Sleep 1000
@@ -66,7 +66,7 @@ _anh_hon(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 690, 125)
-    Sleep 5000
+    Sleep 15000
     ;
     _click_post(hwnd, 511, 623)
     Sleep 1000
@@ -87,7 +87,7 @@ _all_blue(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 765, 125)
-    Sleep 5000
+    Sleep 15000
     ;
     ; bat ca
     ; _click_post(hwnd, 901, 43)
@@ -117,7 +117,7 @@ _imple_down(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 832, 125)
-    Sleep 10000
+    Sleep 15000
     _multi_click_post(hwnd, 557, 624, 4)
     Sleep 1000
     _click_post(hwnd, 1222, 41)
@@ -129,7 +129,7 @@ _dung_luyen(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 972, 125)
-    Sleep 5000
+    Sleep 15000
     ;
     _click_post(hwnd, 548, 548)
     Sleep 1000
@@ -144,7 +144,7 @@ _vung_bien_than_bi(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 625, 181)
-    Sleep 5000
+    Sleep 15000
     ;
     ; _click_post(hwnd, 449, 587)
     ; Sleep 1000
@@ -161,7 +161,7 @@ _haki(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 697, 181)
-    Sleep 5000
+    Sleep 15000
     ;
     _click_post(hwnd, 574, 615)
     Sleep 2000
@@ -176,7 +176,7 @@ _nguyen_to(hwnd) {
     _click_post(hwnd, 925, 35)
     Sleep 1000
     _click_post(hwnd, 835, 181)
-    Sleep 5000
+    Sleep 15000
     ;
     ; mua nguyen to
     _click_post(hwnd, 936, 43)
@@ -235,9 +235,9 @@ _tang_qua(hwnd) {
 _bao_thach(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 858, 615)
-    Sleep 5000
+    Sleep 15000
     _click_post(hwnd, 679, 389)
-    Sleep 5000
+    Sleep 15000
     _click_post(hwnd, 422, 551)
     Sleep 1000
     ;; Me tran
