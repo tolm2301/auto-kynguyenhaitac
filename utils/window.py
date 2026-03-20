@@ -12,6 +12,10 @@ GAME_TITLE_1 = "Kỷ Nguyên Hải Tặc 1"
 GAME_WIDTH = 1280
 GAME_HEIGHT = 720
 
+SWP_NOZORDER = 0x0004
+SWP_NOACTIVATE = 0x0010
+SWP_SHOWWINDOW = 0x0040
+
 
 def get_game_window(title: str = None) -> Optional[int]:
     """Get game window handle by title."""
@@ -59,8 +63,14 @@ def get_game_windows() -> List[int]:
     return hwnds
 
 
-def resize_game(hwnd: int = None) -> bool:
-    """Resize single game window to 1280x720."""
+def resize_game(hwnd: int = None, activate: bool = False) -> bool:
+    """
+    Resize single game window to 1280x720.
+    
+    Args:
+        hwnd: Window handle, if None will find game window
+        activate: If True, bring window to foreground (default False)
+    """
     if hwnd is None:
         hwnd = get_game_window()
     
@@ -68,15 +78,16 @@ def resize_game(hwnd: int = None) -> bool:
         return False
     
     try:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        win32gui.SetForegroundWindow(hwnd)
-        
         x, y, _, _ = win32gui.GetWindowRect(hwnd)
         
+        flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW
         ctypes.windll.user32.SetWindowPos(
             hwnd, 0, x, y, GAME_WIDTH, GAME_HEIGHT, 
-            0x0010 | 0x0200
+            flags
         )
+        
+        if activate:
+            win32gui.SetForegroundWindow(hwnd)
         
         logger.info(f'Resize game window {hwnd} to {GAME_WIDTH}x{GAME_HEIGHT}')
         return True
@@ -91,14 +102,15 @@ def resize_all_games() -> int:
     hwnds = get_game_windows()
     count = 0
     
+    flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW
+    
     for hwnd in hwnds:
         try:
-            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
             x, y, _, _ = win32gui.GetWindowRect(hwnd)
             
             ctypes.windll.user32.SetWindowPos(
                 hwnd, 0, x, y, GAME_WIDTH, GAME_HEIGHT,
-                0x0010 | 0x0200
+                flags
             )
             count += 1
             logger.debug(f'Resize window {hwnd}')
@@ -119,7 +131,6 @@ def get_window_rect(hwnd: int) -> Tuple[int, int, int, int]:
 def activate_window(hwnd: int) -> bool:
     """Activate and bring window to foreground."""
     try:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
         win32gui.SetForegroundWindow(hwnd)
         return True
     except Exception as e:
