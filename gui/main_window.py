@@ -1,15 +1,50 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
+import queue
+import logging
 
 from utils import get_logger, setup_logger, resize_all_games
 from utils.state import stop as state_stop, get_is_running, set_running
-from features import (
-    feature_enhance, feature_rakhoi, feature_nammoiphattai, 
-    feature_daily, feature_anhhon, feature_tanconghaiquan,
-    feature_hoidapcothuong, feature_punk, feature_kraken,
-    feature_test, feature_change_win, feature_lich_su_kien
-)
+
+
+class TextHandler(logging.Handler):
+    def __init__(self, text_widget, q):
+        logging.Handler.__init__(self)
+        self.text_widget = text_widget
+        self.queue = q
+    
+    def emit(self, record):
+        msg = self.format(record)
+        self.queue.put(msg)
+    
+    def process_queue(self):
+        while True:
+            try:
+                msg = self.queue.get_nowait()
+                self.text_widget.insert(tk.END, msg + '\n')
+                self.text_widget.see(tk.END)
+            except queue.Empty:
+                break
+
+
+class LogViewer:
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+        self.queue = queue.Queue()
+        self.handler = None
+        
+    def setup(self, logger):
+        self.handler = TextHandler(self.text_widget, self.queue)
+        self.handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S'))
+        logger.addHandler(self.handler)
+        self._poll_queue()
+    
+    def _poll_queue(self):
+        if self.handler:
+            self.handler.process_queue()
+        if self.text_widget.winfo_exists():
+            self.text_widget.after(100, self._poll_queue)
 
 
 class MainWindow:
@@ -21,8 +56,9 @@ class MainWindow:
         
         self.root = tk.Tk()
         self.root.title('Auto VHT')
-        self.root.geometry('400x650')
-        self.root.resizable(False, False)
+        self.root.geometry('400x700')
+        self.root.resizable(True, True)
+        self.root.minsize(400, 500)
         self.root.configure(bg='#f0f0f0')
         
         try:
@@ -35,6 +71,8 @@ class MainWindow:
         self.feature_thread = None
         self._create_widgets()
         self._update_status('Chưa có tính năng nào đang chạy')
+        
+        self.log_viewer.setup(self.logger)
         
         self.logger.info('GUI initialized successfully')
     
@@ -56,8 +94,13 @@ class MainWindow:
         subtitle = ttk.Label(main_frame, text='Kỷ Nguyên Hải Tặc', font=('Arial', 9), foreground='#666')
         subtitle.pack(pady=(0, 15))
         
-        status_frame = ttk.LabelFrame(main_frame, text='Trạng thái', padding='10')
-        status_frame.pack(fill=tk.X, pady=(0, 15))
+        status_frame = ttk.LabelFrame(main_frame, text='Trạng thái / Log', padding='5')
+        status_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        self.log_text = tk.Text(status_frame, height=8, width=45, font=('Consolas', 8), bg='#1e1e1e', fg='#00ff00')
+        self.log_text.pack(fill=tk.BOTH, expand=True)
+        
+        self.log_viewer = LogViewer(self.log_text)
         
         self.status_label = ttk.Label(status_frame, text='Chưa có', style='Status.TLabel')
         self.status_label.pack()
@@ -85,8 +128,17 @@ class MainWindow:
         nb = ttk.Notebook(main_frame)
         nb.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        features_tab = ttk.Frame(nb, padding='10')
+        features_tab = ttk.Frame(nb, padding='5')
         nb.add(features_tab, text='📋 Tính năng')
+        
+        canvas_features = tk.Canvas(features_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_features = ttk.Scrollbar(features_tab, orient='vertical', command=canvas_features.yview)
+        features_inner = ttk.Frame(canvas_features)
+        features_inner.bind('<Configure>', lambda e: canvas_features.configure(scrollregion=canvas_features.bbox('all')))
+        canvas_features.create_window((0, 0), window=features_inner, anchor='nw')
+        canvas_features.configure(yscrollcommand=scrollbar_features.set)
+        canvas_features.pack(side='left', fill='both', expand=True)
+        scrollbar_features.pack(side='right', fill='y')
         
         features = [
             ('⚡ Cường Hoá', self._on_enhance),
@@ -99,11 +151,20 @@ class MainWindow:
         ]
         
         for i, (text, cmd) in enumerate(features):
-            btn = ttk.Button(features_tab, text=text, command=cmd, style='Feature.TButton')
-            btn.pack(fill=tk.X, pady=3)
+            btn = ttk.Button(features_inner, text=text, command=cmd, style='Feature.TButton')
+            btn.pack(fill=tk.X, pady=3, padx=5)
         
-        boss_tab = ttk.Frame(nb, padding='10')
+        boss_tab = ttk.Frame(nb, padding='5')
         nb.add(boss_tab, text='🐉 Boss')
+        
+        canvas_boss = tk.Canvas(boss_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_boss = ttk.Scrollbar(boss_tab, orient='vertical', command=canvas_boss.yview)
+        boss_inner = ttk.Frame(canvas_boss)
+        boss_inner.bind('<Configure>', lambda e: canvas_boss.configure(scrollregion=canvas_boss.bbox('all')))
+        canvas_boss.create_window((0, 0), window=boss_inner, anchor='nw')
+        canvas_boss.configure(yscrollcommand=scrollbar_boss.set)
+        canvas_boss.pack(side='left', fill='both', expand=True)
+        scrollbar_boss.pack(side='right', fill='y')
         
         boss_features = [
             ('🐎 Rồng Punk (15:30)', self._on_punk),
@@ -111,14 +172,54 @@ class MainWindow:
         ]
         
         for text, cmd in boss_features:
-            btn = ttk.Button(boss_tab, text=text, command=cmd, style='Feature.TButton')
-            btn.pack(fill=tk.X, pady=3)
+            btn = ttk.Button(boss_inner, text=text, command=cmd, style='Feature.TButton')
+            btn.pack(fill=tk.X, pady=3, padx=5)
         
-        tools_tab = ttk.Frame(nb, padding='10')
+        tools_tab = ttk.Frame(nb, padding='5')
         nb.add(tools_tab, text='🔧 Công cụ')
         
-        ttk.Button(tools_tab, text='🧪 Test', command=self._on_test, style='Feature.TButton').pack(fill=tk.X, pady=3)
-        ttk.Button(tools_tab, text='📅 Lịch Sự Kiện', command=self._on_lich_su_kien, style='Feature.TButton').pack(fill=tk.X, pady=3)
+        canvas_tools = tk.Canvas(tools_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_tools = ttk.Scrollbar(tools_tab, orient='vertical', command=canvas_tools.yview)
+        tools_inner = ttk.Frame(canvas_tools)
+        tools_inner.bind('<Configure>', lambda e: canvas_tools.configure(scrollregion=canvas_tools.bbox('all')))
+        canvas_tools.create_window((0, 0), window=tools_inner, anchor='nw')
+        canvas_tools.configure(yscrollcommand=scrollbar_tools.set)
+        canvas_tools.pack(side='left', fill='both', expand=True)
+        scrollbar_tools.pack(side='right', fill='y')
+        
+        ttk.Button(tools_inner, text='🧪 Test', command=self._on_test, style='Feature.TButton').pack(fill=tk.X, pady=3, padx=5)
+        ttk.Button(tools_inner, text='📅 Lịch Sự Kiện', command=self._on_lich_su_kien, style='Feature.TButton').pack(fill=tk.X, pady=3, padx=5)
+        
+        quest_tab = ttk.Frame(nb, padding='5')
+        nb.add(quest_tab, text='📜 Quest')
+        
+        canvas_quest = tk.Canvas(quest_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_quest = ttk.Scrollbar(quest_tab, orient='vertical', command=canvas_quest.yview)
+        quest_inner = ttk.Frame(canvas_quest)
+        quest_inner.bind('<Configure>', lambda e: canvas_quest.configure(scrollregion=canvas_quest.bbox('all')))
+        canvas_quest.create_window((0, 0), window=quest_inner, anchor='nw')
+        canvas_quest.configure(yscrollcommand=scrollbar_quest.set)
+        canvas_quest.pack(side='left', fill='both', expand=True)
+        scrollbar_quest.pack(side='right', fill='y')
+        
+        ttk.Label(quest_inner, text='Tự động làm nhiệm vụ Chính', 
+                  font=('Arial', 9), foreground='#666').pack(pady=(0, 10))
+        ttk.Button(quest_inner, text='🎯 Làm Quest Chính', command=self._on_quest, 
+                   style='Feature.TButton').pack(fill=tk.X, pady=5, padx=5)
+        
+        ttk.Separator(quest_inner, orient='horizontal').pack(fill=tk.X, pady=15)
+        
+        info_frame = ttk.LabelFrame(quest_inner, text='Hướng dẫn', padding='10')
+        info_frame.pack(fill=tk.X, pady=(10, 0), padx=5)
+        
+        info_text = (
+            '1. Mở game và resize về 1280x720\n'
+            '2. Nhấn "Làm Quest Chính" để bắt đầu\n'
+            '3. Script sẽ tự nhận dialog, click Skip/Next\n'
+            '4. Nhấn "Dừng" để kết thúc'
+        )
+        ttk.Label(info_frame, text=info_text, font=('Arial', 8), 
+                  foreground='#555', justify='left').pack(anchor='w')
     
     def _get_count(self) -> int:
         """Get count from input field."""
@@ -158,12 +259,12 @@ class MainWindow:
         self.logger.info('Feature stopped')
     
     def _on_test(self):
-        """Test button clicked."""
+        from features import feature_test
         self.logger.info('Test button clicked')
         self._run_feature(feature_test)
     
     def _on_change_name(self):
-        """Change name button clicked."""
+        from features import feature_change_win
         self.logger.info('Change name button clicked')
         feature_change_win()
     
@@ -174,42 +275,57 @@ class MainWindow:
         messagebox.showinfo('Thông báo', f'Đã resize {count} cửa sổ game')
     
     def _on_enhance(self):
+        from features import feature_enhance
         self.logger.info('Enhance clicked')
         self._run_feature(feature_enhance, self._get_count(), status_callback=self._update_status)
     
     def _on_rakhoi(self):
+        from features import feature_rakhoi
         self.logger.info('Ra khoi clicked')
         self._run_feature(feature_rakhoi, self._get_count(), status_callback=self._update_status)
     
     def _on_nammoiphattai(self):
+        from features import feature_nammoiphattai
         self.logger.info('Nam moi phat tai clicked')
         self._run_feature(feature_nammoiphattai, self._get_count(), status_callback=self._update_status)
     
     def _on_daily(self):
+        from features import feature_daily
         self.logger.info('Daily clicked')
         self._run_feature(feature_daily, status_callback=self._update_status)
     
     def _on_anhhon(self):
+        from features import feature_anhhon
         self.logger.info('Anh hon clicked')
         self._run_feature(feature_anhhon, self._get_count(), status_callback=self._update_status)
     
     def _on_tanconghaiquan(self):
+        from features import feature_tanconghaiquan
         self.logger.info('Tan cong hai quan clicked')
         self._run_feature(feature_tanconghaiquan, status_callback=self._update_status)
     
     def _on_hoidapcothuong(self):
+        from features import feature_hoidapcothuong
         self.logger.info('Hoi dap co thuong clicked')
         self._run_feature(feature_hoidapcothuong, status_callback=self._update_status)
     
     def _on_punk(self):
+        from features import feature_punk
         self.logger.info('Punk clicked')
         self._run_feature(feature_punk, status_callback=self._update_status)
     
     def _on_kraken(self):
+        from features import feature_kraken
         self.logger.info('Kraken clicked')
         self._run_feature(feature_kraken, status_callback=self._update_status)
     
+    def _on_quest(self):
+        from features import feature_quest
+        self.logger.info('Quest clicked')
+        self._run_feature(feature_quest, status_callback=self._update_status)
+    
     def _on_lich_su_kien(self):
+        from features import feature_lich_su_kien
         self.logger.info('Lich su kien clicked')
         feature_lich_su_kien()
     

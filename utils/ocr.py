@@ -124,6 +124,20 @@ class OCRReader:
         
         return results
     
+    def read_text_raw(self, image: np.ndarray, detail: int = 1) -> List:
+        """Read text without preprocessing."""
+        if isinstance(image, Image.Image):
+            image = np.array(image)
+        
+        if len(image.shape) == 2:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        elif image.shape[2] == 4:
+            image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+        elif image.shape[2] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        return self._reader.readtext(image, detail=detail)
+    
     def read_text_from_region(
         self, 
         x: int, 
@@ -231,10 +245,31 @@ class OCRReader:
         logger.debug('OCR reader cleaned up')
 
 
-def screenshot_region(x: int, y: int, width: int, height: int) -> np.ndarray:
-    """Capture screen region and return as numpy array."""
+def screenshot_region(x: int, y: int, width: int, height: int, hwnd: int = None) -> np.ndarray:
+    """Capture screen region and return as numpy array.
+    
+    Args:
+        x, y: Tọa độ trong cửa sổ game (hoặc tọa độ tuyệt đối nếu hwnd=None)
+        width, height: Kích thước vùng capture
+        hwnd: Window handle của game (để tính offset)
+    """
     from PIL import ImageGrab
-    bbox = (x, y, x + width, y + height)
+    import win32gui
+    
+    if hwnd is None:
+        hwnd = win32gui.FindWindow(None, "Kỷ Nguyên Hải Tặc")
+        if hwnd is None:
+            hwnd = win32gui.FindWindow(None, "Kỷ Nguyên Hải Tặc 1")
+    
+    if hwnd:
+        left, top, right, bot = win32gui.GetWindowRect(hwnd)
+        abs_x = left + x
+        abs_y = top + y
+    else:
+        abs_x = x
+        abs_y = y
+    
+    bbox = (abs_x, abs_y, abs_x + width, abs_y + height)
     img = ImageGrab.grab(bbox=bbox)
     return np.array(img)
 

@@ -8,6 +8,7 @@ from .nammoiphattai import feature_nammoiphattai
 from .tanconghaiquan import feature_tanconghaiquan
 from .stop import feature_stop
 from .test import feature_test, feature_change_win, feature_lich_su_kien
+from .questing import feature_quest, stop as quest_stop
 
 __all__ = [
     'feature_enhance',
@@ -23,4 +24,6 @@ __all__ = [
     'feature_test',
     'feature_change_win',
     'feature_lich_su_kien',
+    'feature_quest',
+    'quest_stop',
 ]
