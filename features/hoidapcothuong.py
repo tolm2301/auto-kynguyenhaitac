@@ -65,7 +65,7 @@ def feature_hoidapcothuong(status_callback=None) -> bool:
         logger.info(f'OCR Result: {full_text[:200]}...')
         
         ini_path = _get_question_ini_path()
-        result = _find_fuzzy_match(ini_path, full_text, threshold=0.4)
+        result = _find_fuzzy_match(ini_path, full_text, threshold=0.7)
         
         if result and result['score'] > 0:
             logger.info(f'Found answer: {result["answer"]} (score: {result["score"]:.2f})')

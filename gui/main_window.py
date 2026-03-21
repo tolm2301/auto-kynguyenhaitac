@@ -20,7 +20,7 @@ class MainWindow:
         self.logger.info('Initializing GUI')
         
         self.root = tk.Tk()
-        self.root.title('Auto VHT - Kỷ Nguyên Hải Tặc')
+        self.root.title('Auto VHT')
         self.root.geometry('400x650')
         self.root.resizable(False, False)
         self.root.configure(bg='#f0f0f0')
