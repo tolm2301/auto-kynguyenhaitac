@@ -1,4 +1,10 @@
 _feature_daily() {
+
+    global FEATURE_TASK_SLEEP := 3000
+    global FEATURE_TASK_LONG_SLEEP := 7000
+    global LOAD_SLEEP := 1500
+    global EXIT_FEATURE_SLEEP := 3000
+
     _win_resize_game()
     g_featureText.text := "Tính năng đang chạy: Cường hoá"
     hwnd := _win_get_game()
@@ -26,8 +32,254 @@ _feature_daily() {
     _bao_thach(hwnd)
     _tinh_ban(hwnd)
 
-    ; === ben trai ===
+    ; ; === ben trai ===
     _ra_khoi(hwnd)
+    _dat_hang(hwnd)
+    _dau_truong(hwnd)
+    _huan_luyen(hwnd)
+    _nau_an(hwnd)
+    _cong_hien(hwnd)
+    _hoi_dam(hwnd)
+    _linh_the_bai(hwnd)
+    _cuong_hoa_tau_chien(hwnd)
+    _mua_chien_tich(hwnd)
+    _nhan_thuong_linh_danh_thue(hwnd)
+    _boi_duong_tinh_linh(hwnd)
+    _tam_bao(hwnd)
+}
+
+_tam_bao(hwnd) {
+    _click_post(hwnd, 993, 40)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 836, 122)
+    Sleep FEATURE_TASK_SLEEP
+
+    Loop Integer(5) {
+        _click_post(hwnd, 938, 38)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 683, 364)
+        Sleep LOAD_SLEEP
+        _multi_click_post(hwnd, 908, 310, 30)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 557, 570)
+        Sleep 60000
+        _click_post(hwnd, 150, 248)
+        Sleep FEATURE_TASK_SLEEP
+    }
+
+    _click_post(hwnd, 1211, 36)
+    Sleep FEATURE_TASK_SLEEP
+}
+
+_dau_truong(hwnd){
+    _click_post(hwnd, 993, 40)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 763, 122)
+    Sleep FEATURE_TASK_SLEEP
+    Loop Integer(5) {
+        _multi_click_post(hwnd, 759, 258, 20, 1000)
+        _click_post(hwnd, 1013, 662)
+        Sleep LOAD_SLEEP
+        _post_with_vk_string(hwnd, "ESC")
+        Sleep FEATURE_TASK_SLEEP
+    }
+    _click_post(hwnd, 1211, 36)
+    Sleep FEATURE_TASK_SLEEP
+}
+
+_dat_hang(hwnd) {
+    x := 704
+    y := 245
+    Loop Integer(10) {
+        _click_post(hwnd, 1072, 614)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 1000, 541)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, x, y)
+        Sleep LOAD_SLEEP
+        _multi_click_post(hwnd, 501, 268, 10, 700)
+        _post_with_vk_string(hwnd, "ESC")
+        Sleep LOAD_SLEEP
+        _post_with_vk_string(hwnd, "ESC")
+        Sleep LOAD_SLEEP
+        y := y + 22
+    }
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_boi_duong_tinh_linh(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 926, 560)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 485)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1037, 422)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ENTER")
+    _click_post(hwnd, 1222, 42)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_nhan_thuong_linh_danh_thue(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 926, 560)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 516)
+    Sleep FEATURE_TASK_LONG_SLEEP
+    _click_post(hwnd, 869, 33)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 738, 186)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 746, 285)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ENTER")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1222, 26)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_cuong_hoa_tau_chien(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 926, 560)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 456)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 634, 556)
+    Sleep FEATURE_TASK_SLEEP
+    _multi_click_post(hwnd, 768, 340, 5)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 768, 427, 5)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 768, 515, 5)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_mua_chien_tich(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 926, 560)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 456)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 533, 500)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 459, 349)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_cong_hien(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 876, 515)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 497, 345)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 711, 349)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 590, 408)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_hoi_dam(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 876, 515)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 499, 457, 6, 2000)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_linh_the_bai(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 876, 546)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 692, 559)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_huan_luyen(hwnd) {
+    _click_post(hwnd, 69, 201)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 576, 194)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 623, 544, 2)
+
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 576, 283)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 623, 544, 2)
+
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 576, 361)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 623, 544, 2)
+
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_nau_an(hwnd) {
+    _click_post(hwnd, 33, 225)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 518, 148)
+    Sleep 1000
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep 1000
+    x1 := 365
+    x2 := 599
+    x3 := 827
+    y1 := 266
+    y2 := 389
+    y3 := 510
+    _support_nau_an(hwnd, x3, y3)
+    _support_nau_an(hwnd, x2, y3)
+    _support_nau_an(hwnd, x1, y3)
+
+    _support_nau_an(hwnd, x3, y2)
+    _support_nau_an(hwnd, x2, y2)
+    _support_nau_an(hwnd, x1, y2)
+
+    _support_nau_an(hwnd, x3, y1)
+    _support_nau_an(hwnd, x2, y1)
+    _support_nau_an(hwnd, x1, y1)
+
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_support_nau_an(hwnd, x, y) {
+    _click_post(hwnd, 33, 225)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, x, y)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 581, 449, 10)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
 }
 
 _ra_khoi(hwnd) {

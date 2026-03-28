@@ -132,3 +132,29 @@ _feature_kraken() {
         Sleep 1000
     }
 }
+
+_feature_kaido() {
+    _win_resize_list()
+    g_featureText.text := "Tính năng đang chạy: Kraken"
+    hwnds := _win_get_list()
+    global isRunning
+    isRunning := true
+
+    while true {
+        if !isRunning
+            return
+
+        if getHour() = 21 and getMinute() = 30 {
+            Sleep 3000
+
+            for hwnd in hwnds {
+                _click_post(hwnd, 1125, 541)
+                Sleep 5000
+                _click_post(hwnd, 1129, 122)
+                Sleep 1000
+                _click_post(hwnd, 1129, 173)
+                Sleep 1000
+            }
+        }
+    }
+}
