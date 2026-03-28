@@ -11,13 +11,6 @@ _gui_init() {
     g_inputCount := myGui.AddEdit("w50 h30 vInputCount x100 y10", "1")
     g_featureText := myGui.AddText("x10 y75 w200 h30", "Tính năng đang chạy: Chưa có")
 
-    ; === GIFT CODE ===
-    myGui.AddText("x10 y110 w60 h20", "Prefix:")
-    g_prefixInput := myGui.AddEdit("w140 h25 x10 y130 vPrefixInput", "KN426")
-    myGui.AddText("x10 y158 w60 h20", "Số lượt:")
-    g_countInput := myGui.AddEdit("w140 h25 x10 y178 vCountInput", "10")
-    btnGiftcode := myGui.AddButton("w200 h30 x10 y210", "Tạo & Nhập Gift Code")
-
     ; === BUTTON ===
     btnStop := myGui.AddButton("w50 h30 x10 y250", "Dừng")
     btnTest := myGui.AddButton("w50 h30 x60 y250", "Test")
@@ -42,7 +35,6 @@ _gui_init() {
     btnTest.OnEvent("Click", (*) => _feature_test())
     btnChangeName.OnEvent("Click", (*) => _feature_change_win())
     btnResize.OnEvent("Click", (*) => _win_resize_list())
-    btnGiftcode.OnEvent("Click", (*) => _feature_giftcode_pattern(g_prefixInput.Value, Integer(g_countInput.Value)))
     
     ; FEATURE
     btnEnhance.OnEvent("Click", (*) => _feature_enhance(g_inputCount.Value))

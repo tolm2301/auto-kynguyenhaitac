@@ -23,6 +23,11 @@ _feature_punk() {
                 Sleep 1000
             }
 
+            for hwnd in hwnds {
+                _multi_click_post(hwnd, 582, 145, 10)
+                Sleep 1000
+            }
+
             while true {
                 if !isRunning
                     return
@@ -84,6 +89,11 @@ _feature_kraken() {
                 _click_post(hwnd, 893, 558)
                 Sleep 2000
                 _click_post(hwnd, 680, 73)
+                Sleep 1000
+            }
+
+            for hwnd in hwnds {
+                _multi_click_post(hwnd, 582, 145, 10)
                 Sleep 1000
             }
 
