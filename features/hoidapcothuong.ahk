@@ -24,6 +24,8 @@ _feature_hoidapcothuong() {
 
         ; 3. Làm sạch văn bản quét được
         ScannedText := Result.Text
+        ; Lưu vào history
+        _save_history(ScannedText)
         ScannedText := RegExReplace(ScannedText, "\s+", " ")
         ScannedText := Trim(ScannedText)
 
@@ -173,4 +175,10 @@ GetSelectionCoords() {
     }
     RectGui.Destroy()
     return Area
+}
+
+_save_history(question) {
+    historyPath := A_ScriptDir . "\resources\history.ini"
+    section := "Quest"
+    IniWrite("", historyPath, section, question)
 }

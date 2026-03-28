@@ -18,6 +18,7 @@ _gui_init()
 #Include features\anhhon.ahk
 #Include features\tanconghaiquan.ahk
 #Include features\hoidapcothuong.ahk
+#Include features\giftcode.ahk
 
 F3:: {
     _win_resize_game()

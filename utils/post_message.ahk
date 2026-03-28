@@ -9,10 +9,10 @@ _click_post(hwnd, x, y) {
     PostMessage 0x202, 0, lParam, , hwnd
 }
 
-_multi_click_post(hwnd, x, y, count) {
+_multi_click_post(hwnd, x, y, count, sleepTime := 500) {
     Loop Integer(count) {
         _click_post(hwnd, x, y)
-        Sleep 500
+        Sleep sleepTime
     }
 }
 
