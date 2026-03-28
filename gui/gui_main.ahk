@@ -1,8 +1,9 @@
 
 isRunning := false
+g_nextEventText := ""
 
 _gui_init() {
-    global g_inputCount, isRunning, g_featureText
+    global g_inputCount, isRunning, g_featureText, g_nextEventText
 
     myGui := Gui("", "Auto VHT")
 
@@ -12,6 +13,8 @@ _gui_init() {
     g_featureText := myGui.AddText("x10 y75 w200 h30", "Tính năng đang chạy: Chưa có")
 
     myTab := myGui.AddTab("x10 y105 w210 h310", ["Main", "Boss", "Phụ trợ"])
+
+    g_nextEventText := myGui.AddText("x10 y420 w210 h30", _get_next_event_text())
 
     ; Main Tab
     myTab.UseTab(1)
@@ -60,4 +63,67 @@ _gui_init() {
     myGui.OnEvent("Close", (*) => ExitApp())
 
     myGui.Show()
+}
+
+_get_next_event_text() {
+    iniPath := A_ScriptDir . "\resources\events.ini"
+    if !FileExist(iniPath)
+        return "Sự kiện tiếp theo: Không có lịch"
+
+    currentDay := Mod(A_WDay, 7)
+    if (currentDay = 0)
+        currentDay := 7
+
+    currentHour := A_Hour
+    currentMinute := A_Min
+
+    if (currentHour >= 22) {
+        return "Trạng thái: Kết thúc hoạt động"
+    }
+
+    eventList := []
+    loop read iniPath {
+        if InStr(A_LoopReadLine, "[") or InStr(A_LoopReadLine, "=") = 0
+            continue
+        parts := StrSplit(A_LoopReadLine, "=")
+        eventName := Trim(parts[1])
+        eventTimeStr := Trim(parts[2])
+        timeParts := StrSplit(eventTimeStr, "|")
+        daysStr := Trim(timeParts[1])
+        timeStr := Trim(timeParts[2])
+        eventHour := Integer(StrSplit(timeStr, ":")[1])
+        eventMinute := Integer(StrSplit(timeStr, ":")[2])
+
+        days := StrSplit(daysStr, ",")
+        for day in days {
+            day := Integer(Trim(day))
+            if (day = currentDay) {
+                eventList.Push({name: eventName, hour: eventHour, minute: eventMinute, day: day})
+            }
+        }
+    }
+
+    if (eventList.Length = 0)
+        return "Sự kiện tiếp theo: Không có hôm nay"
+
+    nextEvent := ""
+    minDiff := 999999
+
+    for event in eventList {
+        diff := (event.hour - currentHour) * 60 + (event.minute - currentMinute)
+        if (diff > 0 and diff < minDiff) {
+            minDiff := diff
+            nextEvent := event
+        }
+    }
+
+    if (nextEvent = "") {
+        return "Sự kiện tiếp theo: Không còn hôm nay"
+    }
+
+    hours := nextEvent.hour
+    minutes := nextEvent.minute
+    timeStr := Format("{:02}:{:02}", hours, minutes)
+
+    return "Sự kiện tiếp theo: " . nextEvent.name . " - " . timeStr
 }
