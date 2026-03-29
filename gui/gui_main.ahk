@@ -1,9 +1,10 @@
 
 isRunning := false
 g_nextEventText := ""
+g_eventTimerEnabled := false
 
 _gui_init() {
-    global g_inputCount, isRunning, g_featureText, g_nextEventText
+    global g_inputCount, isRunning, g_featureText, g_nextEventText, g_nextEventControl
 
     myGui := Gui("", "Auto VHT")
 
@@ -14,7 +15,8 @@ _gui_init() {
 
     myTab := myGui.AddTab("x10 y105 w210 h310", ["Main", "Boss", "Phụ trợ"])
 
-    g_nextEventText := myGui.AddText("x10 y420 w210 h30", _get_next_event_text())
+    g_nextEventControl := myGui.AddText("x10 y420 w210 h30", "")
+    _update_event_text()
 
     ; Main Tab
     myTab.UseTab(1)
@@ -68,6 +70,7 @@ _gui_init() {
     myGui.OnEvent("Close", (*) => ExitApp())
 
     myGui.Show()
+    _start_event_timer()
 }
 
 _get_next_event_text() {
@@ -131,4 +134,18 @@ _get_next_event_text() {
     timeStr := Format("{:02}:{:02}", hours, minutes)
 
     return "Sự kiện tiếp theo: " . nextEvent.name . " - " . timeStr
+}
+
+_update_event_text() {
+    global g_nextEventControl
+    newText := _get_next_event_text()
+    g_nextEventControl.Value := newText
+}
+
+_start_event_timer() {
+    global g_eventTimerEnabled
+    if (!g_eventTimerEnabled) {
+        g_eventTimerEnabled := true
+        SetTimer(_update_event_text, 60000)
+    }
 }
