@@ -6,7 +6,7 @@ _feature_daily() {
     global EXIT_FEATURE_SLEEP := 3000
 
     _win_resize_game()
-    g_featureText.text := "Tính năng đang chạy: Cường hoá"
+    g_featureText.text := "Tính năng đang chạy: Daily"
     hwnd := _win_get_game()
     global isRunning
     isRunning := true
@@ -16,7 +16,7 @@ _feature_daily() {
         return
     }
 
-    ;; === TINH NANG ===
+    ; === TINH NANG ===
     _che_do(hwnd)
     _anh_hon(hwnd)
     _all_blue(hwnd)
@@ -35,17 +35,62 @@ _feature_daily() {
     ; ; === ben trai ===
     _ra_khoi(hwnd)
     _dat_hang(hwnd)
+    _linh_treo_thuong(hwnd)
     _dau_truong(hwnd)
     _huan_luyen(hwnd)
     _nau_an(hwnd)
+
+    
     _cong_hien(hwnd)
     _hoi_dam(hwnd)
     _linh_the_bai(hwnd)
     _cuong_hoa_tau_chien(hwnd)
     _mua_chien_tich(hwnd)
-    _nhan_thuong_linh_danh_thue(hwnd)
-    _boi_duong_tinh_linh(hwnd)
     _tam_bao(hwnd)
+    _boi_duong_tinh_linh(hwnd)
+    _nhan_thuong_linh_danh_thue(hwnd)
+    _nhon_hop_qua(hwnd)
+}
+
+_nhon_hop_qua(hwnd) {
+    _click_post(hwnd, 61, 365)
+    Sleep FEATURE_TASK_SLEEP
+    
+    ; hop 1
+    _click_post(hwnd, 393, 176)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 630, 460)
+    Sleep LOAD_SLEEP
+
+    ; hop 2
+    _click_post(hwnd, 507, 176)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 630, 460)
+    Sleep LOAD_SLEEP
+
+    ; hop 3
+    _click_post(hwnd, 619, 176)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 630, 460)
+    Sleep LOAD_SLEEP
+
+    ;hop 4
+    _click_post(hwnd, 742, 176)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 630, 460)
+    Sleep LOAD_SLEEP
+
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_linh_treo_thuong(hwnd) {
+    _click_post(hwnd, 1184, 616)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 855, 533)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep FEATURE_TASK_SLEEP
 }
 
 _tam_bao(hwnd) {
@@ -77,7 +122,7 @@ _dau_truong(hwnd){
     _click_post(hwnd, 763, 122)
     Sleep FEATURE_TASK_SLEEP
     Loop Integer(5) {
-        _multi_click_post(hwnd, 759, 258, 20, 1000)
+        _multi_click_post(hwnd, 759, 258, 15, 1000)
         _click_post(hwnd, 1013, 662)
         Sleep LOAD_SLEEP
         _post_with_vk_string(hwnd, "ESC")
@@ -90,7 +135,7 @@ _dau_truong(hwnd){
 _dat_hang(hwnd) {
     x := 704
     y := 245
-    Loop Integer(10) {
+    Loop Integer(5) {
         _click_post(hwnd, 1072, 614)
         Sleep LOAD_SLEEP
         _click_post(hwnd, 1000, 541)
@@ -110,23 +155,20 @@ _dat_hang(hwnd) {
 _boi_duong_tinh_linh(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 926, 560)
-    Sleep LOAD_SLEEP
-    _click_post(hwnd, 872, 485)
-    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 546)
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 1037, 422)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ENTER")
-    _click_post(hwnd, 1222, 42)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1227, 38)
     Sleep EXIT_FEATURE_SLEEP
 }
 
 _nhan_thuong_linh_danh_thue(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 926, 560)
-    Sleep LOAD_SLEEP
-    _click_post(hwnd, 872, 516)
+    _click_post(hwnd, 872, 546)
     Sleep FEATURE_TASK_LONG_SLEEP
     _click_post(hwnd, 869, 33)
     Sleep LOAD_SLEEP
@@ -145,17 +187,15 @@ _nhan_thuong_linh_danh_thue(hwnd) {
 _cuong_hoa_tau_chien(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 926, 560)
-    Sleep LOAD_SLEEP
-    _click_post(hwnd, 872, 456)
-    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 546)
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 634, 556)
     Sleep FEATURE_TASK_SLEEP
-    _multi_click_post(hwnd, 768, 340, 5)
+    _multi_click_post(hwnd, 768, 340, 10)
     Sleep LOAD_SLEEP
-    _multi_click_post(hwnd, 768, 427, 5)
+    _multi_click_post(hwnd, 768, 427, 10)
     Sleep LOAD_SLEEP
-    _multi_click_post(hwnd, 768, 515, 5)
+    _multi_click_post(hwnd, 768, 515, 10)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
@@ -166,13 +206,11 @@ _cuong_hoa_tau_chien(hwnd) {
 _mua_chien_tich(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 926, 560)
-    Sleep LOAD_SLEEP
-    _click_post(hwnd, 872, 456)
-    Sleep LOAD_SLEEP
+    _click_post(hwnd, 872, 546)
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 533, 500)
     Sleep LOAD_SLEEP
-    _click_post(hwnd, 459, 349)
+    _multi_click_post(hwnd, 459, 349, 5)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
@@ -183,7 +221,7 @@ _mua_chien_tich(hwnd) {
 _cong_hien(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 876, 515)
+    _click_post(hwnd, 876, 454)
     Sleep LOAD_SLEEP
     _click_post(hwnd, 497, 345)
     Sleep LOAD_SLEEP
@@ -200,7 +238,7 @@ _cong_hien(hwnd) {
 _hoi_dam(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 876, 515)
+    _click_post(hwnd, 876, 484)
     Sleep LOAD_SLEEP
     _multi_click_post(hwnd, 499, 457, 6, 2000)
     Sleep LOAD_SLEEP
@@ -211,7 +249,7 @@ _hoi_dam(hwnd) {
 _linh_the_bai(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 876, 546)
+    _click_post(hwnd, 876, 515)
     Sleep LOAD_SLEEP
     _click_post(hwnd, 692, 559)
     Sleep LOAD_SLEEP
@@ -285,7 +323,7 @@ _support_nau_an(hwnd, x, y) {
 _ra_khoi(hwnd) {
     _click_post(hwnd, 45, 270)
     Sleep 3000
-    Loop Integer(10) {
+    Loop Integer(15) {
         _click_post(hwnd, 804, 210)
         sleep 500
     }

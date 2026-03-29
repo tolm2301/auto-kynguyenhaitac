@@ -19,6 +19,7 @@ _gui_init() {
     ; Main Tab
     myTab.UseTab(1)
     btnDaily := myGui.AddButton("w200 h30 x10 y130", "Daily")
+    btnTBC := myGui.AddButton("w200 h30 x10 y165", "Tầm bảo chiến")
 
     ; Event tab
     myTab.UseTab(2)
@@ -42,12 +43,16 @@ _gui_init() {
     btnChangeName := myGui.AddButton("w50 h30 x110 y40", "Change")
     btnResize := myGui.AddButton("w50 h30 x160 y40", "Resize")
 
+    ; Main Tab
     btnDaily.OnEvent("Click", (*) => _feature_daily())
+    btnTBC.OnEvent("Click", (*) => _feature_tam_bao_chien())
 
+    ; Boss Tab
     btnPunk.OnEvent("Click", (*) => _feature_punk())
     btnKraken.OnEvent("Click", (*) => _feature_kraken())
     btnKaido.OnEvent("Click", (*) => _feature_kaido())
 
+    ; Support tab
     btnEnhance.OnEvent("Click", (*) => _feature_enhance(g_inputCount.Value))
     btnRaKhoi.OnEvent("Click", (*) => _feature_rakhoi(g_inputCount.Value))
     btnNamMoiPhatTai.OnEvent("Click", (*) => _feature_nammoiphattai(g_inputCount.Value))
