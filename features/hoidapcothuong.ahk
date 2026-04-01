@@ -25,12 +25,18 @@ _feature_hoidapcothuong() {
         ; 3. Làm sạch văn bản quét được
         ScannedText := Result.Text
         ; Lưu vào history
-        _save_history(ScannedText)
-        ScannedText := RegExReplace(ScannedText, "\s+", " ")
-        ScannedText := Trim(ScannedText)
+        ; _save_history(ScannedText)
+        ; ScannedText := RegExReplace(ScannedText, "\s+", " ")
+        ; ScannedText := Trim(ScannedText)
+
+        section := "Questions"
+
+        if (getHour() >= 11 and getHour() <= 13) {
+            section := "Hoidapcothuong"
+        }
 
         ; 4. Tìm kiếm tương đồng trong file INI
-        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", "Questions", ScannedText, 0.4) ; Ngưỡng 40%
+        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", section, ScannedText, 0.6) ; Ngưỡng 40%
 
         if (BestMatch.Score > 0) {
             MsgBox("CÂU HỎI: " . BestMatch.Question . "`n`nĐÁP ÁN: " . BestMatch.Answer, "KẾT QUẢ")
