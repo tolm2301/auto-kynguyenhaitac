@@ -5,51 +5,48 @@ _feature_daily() {
     global LOAD_SLEEP := 1500
     global EXIT_FEATURE_SLEEP := 3000
 
-    _win_resize_game()
+    _win_resize_list()
     g_featureText.text := "Tính năng đang chạy: Daily"
-    hwnd := _win_get_game()
+    hwnds := _win_get_list()
     global isRunning
     isRunning := true
 
-    if !hwnd {
-        MsgBox "Không tìm thấy cửa sổ game"
-        return
+    for hwnd in hwnds {
+        ; === TINH NANG ===
+        _che_do(hwnd)
+        _anh_hon(hwnd)
+        _all_blue(hwnd)
+        _imple_down(hwnd)
+        _dung_luyen(hwnd)
+        _vung_bien_than_bi(hwnd)
+        _haki(hwnd)
+        _nguyen_to(hwnd)
+        _tap_kick(hwnd)
+
+        ;; === NHAN VAT ===
+        _tang_qua(hwnd)
+        _bao_thach(hwnd)
+        _tinh_ban(hwnd)
+
+        ; ; === ben trai ===
+        _ra_khoi(hwnd)
+        _dat_hang(hwnd)
+        _linh_treo_thuong(hwnd)
+        _dau_truong(hwnd)
+        _huan_luyen(hwnd)
+        _nau_an(hwnd)
+
+        
+        _cong_hien(hwnd)
+        _hoi_dam(hwnd)
+        _linh_the_bai(hwnd)
+        _cuong_hoa_tau_chien(hwnd)
+        _mua_chien_tich(hwnd)
+        _tam_bao(hwnd)
+        _boi_duong_tinh_linh(hwnd)
+        _nhan_thuong_linh_danh_thue(hwnd)
+        _nhon_hop_qua(hwnd)
     }
-
-    ; === TINH NANG ===
-    _che_do(hwnd)
-    _anh_hon(hwnd)
-    _all_blue(hwnd)
-    _imple_down(hwnd)
-    _dung_luyen(hwnd)
-    _vung_bien_than_bi(hwnd)
-    _haki(hwnd)
-    _nguyen_to(hwnd)
-    _tap_kick(hwnd)
-
-    ;; === NHAN VAT ===
-    _tang_qua(hwnd)
-    _bao_thach(hwnd)
-    _tinh_ban(hwnd)
-
-    ; ; === ben trai ===
-    _ra_khoi(hwnd)
-    _dat_hang(hwnd)
-    _linh_treo_thuong(hwnd)
-    _dau_truong(hwnd)
-    _huan_luyen(hwnd)
-    _nau_an(hwnd)
-
-    
-    _cong_hien(hwnd)
-    _hoi_dam(hwnd)
-    _linh_the_bai(hwnd)
-    _cuong_hoa_tau_chien(hwnd)
-    _mua_chien_tich(hwnd)
-    _tam_bao(hwnd)
-    _boi_duong_tinh_linh(hwnd)
-    _nhan_thuong_linh_danh_thue(hwnd)
-    _nhon_hop_qua(hwnd)
 }
 
 _nhon_hop_qua(hwnd) {
