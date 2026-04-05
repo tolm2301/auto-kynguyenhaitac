@@ -27,6 +27,8 @@
 
 ### 3. GUI & Window Management
 - **GUIs**: GUI controls (Button, Edit, ListBox, ComboBox, DatePicker, etc.)
+- **GUI Events**: OnEvent Click/Change, callbacks
+- **Tab Control**: AddTab, UseTab
 - **Window Operations**: WinActivate, WinWait, WinMove, WinHide, WinShow
 - **Window Detection**: WinExist, WinGetTitle, WinGetText, WinGetPID
 - **Controls**: ControlClick, ControlSend, ControlGetText, ControlSetText

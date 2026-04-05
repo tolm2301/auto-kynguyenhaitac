@@ -6,7 +6,7 @@ _feature_stop() {
 
 _feature_tam_bao_chien() {
 
-    global FEATUE_SLEEP := 7000
+    global FEATUE_SLEEP := 4000
     global LOAD_SLEEP := 1500
     global TBC_SLEEP := 60 * 30 + 10
 
@@ -17,6 +17,15 @@ _feature_tam_bao_chien() {
     isRunning := true
 
     count := 0
+
+    for hwnd in hwnds {
+        _click_post(hwnd, 1218, 538)
+    }
+    Sleep 20000
+    for hwnd in hwnds {
+        _click_post(hwnd, 1213, 52)
+    }
+    Sleep FEATUE_SLEEP
 
     while true {
         if !isRunning
@@ -36,6 +45,10 @@ _feature_tam_bao_chien() {
                 Sleep LOAD_SLEEP
                 _multi_click_post(hwnd, 918, 181, 3, 700)
                 Sleep LOAD_SLEEP
+            }
+
+            for hwnd in hwnds {
+
                 _click_post(hwnd, 632, 587)
                 Sleep LOAD_SLEEP
                 _click_post(hwnd, 1213, 52)
