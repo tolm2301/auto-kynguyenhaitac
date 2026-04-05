@@ -38,7 +38,6 @@ _feature_daily() {
         _tam_bao(hwnd)
 
         _cong_hien(hwnd)
-        _hoi_dam(hwnd)
         _linh_the_bai(hwnd)
         _cuong_hoa_tau_chien(hwnd)
         _mua_chien_tich(hwnd)

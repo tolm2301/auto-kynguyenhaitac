@@ -33,18 +33,3 @@ F3:: {
     Sleep 500
     _post_with_vk_string(hwnd, "Esc")
 }
-
-F4::{
-    _feature_lich_su_kien()
-}
-
-F6::{
-    hwnds := _win_get_list()
-
-    hwnd_list_string := ""
-    for hwnd in hwnds {
-        hwnd_list_string .= hwnd . ", "
-    }
-
-    MsgBox hwnd_list_string
-}
