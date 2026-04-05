@@ -524,7 +524,7 @@ _nguyen_to(hwnd) {
     ;
     ; mua nguyen to
     _click_post(hwnd, 936, 43)
-    Sleep 2000
+    Sleep 5000
     _click_post(hwnd, 688, 252)
     Sleep 1000
     _click_post(hwnd, 470, 354)
