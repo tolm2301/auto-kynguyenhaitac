@@ -66,9 +66,9 @@ _hoidap_read_question(hwnd) {
 
 _hoidap_get_option_config() {
     static cfg := Map(
-        "A", {ocrX1: 660, ocrY1: 193, ocrX2: 888, ocrY2: 215, clickX: 633, clickY: 197},
-        "B", {ocrX1: 660, ocrY1: 225, ocrX2: 888, ocrY2: 241, clickX: 636, clickY: 229},
-        "C", {ocrX1: 660, ocrY1: 257, ocrX2: 815, ocrY2: 288, clickX: 636, clickY: 260}
+        "A", {ocrX1: 622, ocrY1: 181, ocrX2: 888, ocrY2: 215, clickX: 633, clickY: 197},
+        "B", {ocrX1: 622, ocrY1: 213, ocrX2: 888, ocrY2: 241, clickX: 636, clickY: 229},
+        "C", {ocrX1: 622, ocrY1: 245, ocrX2: 815, ocrY2: 288, clickX: 636, clickY: 260}
     )
     return cfg
 }
