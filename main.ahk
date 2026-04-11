@@ -24,6 +24,7 @@ _log_startup_error(msg) {
 #include features\anhhon.ahk
 #include features\tanconghaiquan.ahk
 #include features\hoidapcothuong.ahk
+#include features\haitacthongthai.ahk
 #include features\giftcode.ahk
 
 _gui_init()

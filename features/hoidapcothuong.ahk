@@ -9,11 +9,8 @@ _feature_hoidapcothuong() {
     isRunning := true
     g_featureText.Text := "Tính năng đang chạy: Hỏi đáp có thưởng"
 
-    for hwnd in hwnds {
-        if !isRunning
-            return
-        _hoidap_auto_answer(hwnd)
-    }
+    hwnd := hwnds[1]
+    _hoidap_auto_answer(hwnd)
 }
 
 _hoidap_auto_answer(hwnd) {
@@ -60,16 +57,10 @@ _hoidap_log_game_options(optionMap) {
 }
 
 _hoidap_get_section() {
-    hour := Integer(A_Hour)
-    if (hour >= 12 and hour <= 13)
-        return "Hoidapcothuong"
     return "Questions"
 }
 
 _hoidap_read_question(hwnd) {
-    hour := Integer(A_Hour)
-    if (hour >= 12 and hour <= 13)
-        return _ocr_from_bit_map(hwnd, 0, 0, 1280, 720)
     return _ocr_from_bit_map(hwnd, 634, 154, 884, 186)
 }
 

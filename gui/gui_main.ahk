@@ -21,6 +21,7 @@ _gui_init() {
     myTab.UseTab(1)
     btnDaily := myGui.AddButton("w200 h30 x10 y130", "Daily")
     btnTBC := myGui.AddButton("w200 h30 x10 y165", "Tầm bảo chiến")
+    btnHaiTacThongThai := myGui.AddButton("w200 h30 x10 y200", "Hải tặc thông thái")
 
     ; Boss Tab (auto by scheduler)
     myTab.UseTab(2)
@@ -46,6 +47,7 @@ _gui_init() {
     ; Main Tab
     btnDaily.OnEvent("Click", (*) => _feature_daily())
     btnTBC.OnEvent("Click", (*) => _feature_tam_bao_chien())
+    btnHaiTacThongThai.OnEvent("Click", (*) => _feature_haitacthongthai())
 
     ; Support tab
     btnEnhance.OnEvent("Click", (*) => _feature_enhance(g_inputCount.Value))
