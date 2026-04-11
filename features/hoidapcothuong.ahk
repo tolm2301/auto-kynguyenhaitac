@@ -11,7 +11,7 @@ _feature_hoidapcothuong() {
         if (getHour() >= 11 and getHour() <= 13) {
             ocr_result := _ocr_from_bit_map(hwnd, 0, 0, 1280, 720)
         } else {
-            ocr_result := _ocr_from_bit_map(hwnd, 632, 153, 878, 186)
+            ocr_result := _ocr_from_bit_map(hwnd, 634, 154, 884, 186)
         }
 
         section := "Questions"
@@ -21,7 +21,7 @@ _feature_hoidapcothuong() {
         }
 
         ; 4. Tìm kiếm tương đồng trong file INI
-        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", section, ocr_result, 0.5) ; Ngưỡng 40%
+        BestMatch := FindFuzzyMatch(A_ScriptDir . "\resources\Question.ini", section, ocr_result, 0.4) ; Ngưỡng 40%
 
         if (BestMatch.Score > 0) {
             MsgBox("CÂU HỎI: " . BestMatch.Question . "`n`nĐÁP ÁN: " . BestMatch.Answer, "KẾT QUẢ")

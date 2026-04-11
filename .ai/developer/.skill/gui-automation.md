@@ -1,94 +1,66 @@
-# GUI Automation Skills - AHK2
+# GUI Automation Skill (AHK2)
 
-## 1. GUI Structure Pattern
+## Mục tiêu
+Tạo GUI ổn định, dễ nối feature, và không block toàn bộ app khi chạy automation.
 
-```autohotkey
-; Khởi tạo GUI với tên và title
-myGui := Gui("", "Auto VHT")
-myGui.Icon := A_ScriptDir . "\resources\icon.ico"
-
-; Thêm controls
-myGui.AddText("x10 y10 w200 h30", "Label text")
-myGui.AddEdit("w50 h30 vInputCount x100 y10", "default")
-myGui.AddButton("w200 h30 x10 y130", "Button Text")
-
-; Tab control
-myTab := myGui.AddTab("x10 y105 w210 h310", ["Tab1", "Tab2", "Tab3"])
-myTab.UseTab(1)  ; Chuyển sang tab 1
-```
-
-## 2. Event Handling
+## Pattern khung GUI
 
 ```autohotkey
-; Button click event
-btnName.OnEvent("Click", (*) => myFunction())
+#Requires AutoHotkey v2.0
 
-; Checkbox event
-chkBox.OnEvent("Change", (*) => myFunction(chkBox.Value))
+global g_statusText := 0
+global g_isRunning := false
 
-; GUI Close event
-myGui.OnEvent("Close", (*) => ExitApp())
-```
+BuildMainGui() {
+    guiMain := Gui("+Resize", "AHK2 Automation")
+    guiMain.SetFont("s10", "Segoe UI")
 
-## 3. Control Types
+    tab := guiMain.AddTab3("x10 y10 w460 h300", ["Main", "Tools"])
+    tab.UseTab("Main")
 
-| Control | Creation | Properties |
-|---------|----------|------------|
-| Text | `AddText` | .Value |
-| Edit | `AddEdit` | .Value |
-| Button | `AddButton` | OnEvent |
-| Checkbox | `AddCheckbox` | .Value |
-| DropDownList | `AddDropDownList` | .Add, .Choose |
-| ListBox | `AddListBox` | .Add, .Choose |
-| Slider | `AddSlider` | .Value |
-| Progress | `AddProgress` | .Value |
+    g_statusText := guiMain.AddText("x25 y55 w420 h20", "Status: Ready")
+    btnRun := guiMain.AddButton("x25 y85 w200 h30", "Run Feature")
+    btnRun.OnEvent("Click", (*) => RunFeatureSafely())
 
-## 4. Dynamic Updates
-
-```autohotkey
-; Cập nhật text
-g_featureText.Value := "New text"
-
-; Lấy giá trị input
-value := g_inputCount.Value
-
-; Enable/Disable button
-btnSome.Button.Enabled := false
-```
-
-## 5. Common Coordinates
-
-```
-x10, y10           : Vị trí góc trên trái
-w200, h30          : Kích thước width, height
-x+10, y+10         : Offset từ vị trí hiện tại
-vVariableName      : Biến liên kết với control
-```
-
-## 6. Tích hợp Feature vào GUI
-
-```autohotkey
-; Trong gui_main.ahk
-btnFeature := myGui.AddButton("w200 h30 x10 y200", "Feature Name")
-btnFeature.OnEvent("Click", (*) => _feature_myfeature())
-
-; Trong features/myfeature.ahk
-_feature_myfeature() {
-    global isRunning, g_featureText
-    isRunning := true
-    g_featureText.text := "Tính năng: My Feature"
-    
-    ; Logic code here
-    
-    isRunning := false
+    guiMain.OnEvent("Close", (*) => ExitApp())
+    guiMain.Show("w480 h330")
 }
 ```
 
-## 7. Best Practices
+## Pattern chạy feature an toàn
 
-1. Luôn có `isRunning` global flag để stop được
-2. Update `g_featureText` để hiển thị trạng thái
-3. Sử dụng tab để nhóm related features
-4. Đặt tên biến có prefix `g_` cho GUI controls global
-5. Include `#Requires AutoHotkey v2.0` đầu file
-6. Không include utils ở feature file (đã có ở main)
+```autohotkey
+RunFeatureSafely() {
+    global g_isRunning, g_statusText
+    if g_isRunning {
+        g_statusText.Value := "Status: Busy"
+        return
+    }
+
+    g_isRunning := true
+    g_statusText.Value := "Status: Running"
+    try {
+        _feature_my_task()
+        g_statusText.Value := "Status: Done"
+    } catch as err {
+        g_statusText.Value := "Status: Error - " err.Message
+    } finally {
+        g_isRunning := false
+    }
+}
+```
+
+## Binding feature vào GUI
+
+```autohotkey
+; gui/gui_main.ahk
+btnDailyTask := guiMain.AddButton("x25 y125 w200 h30", "Daily Task Point 4")
+btnDailyTask.OnEvent("Click", (*) => _feature_daily_task_point4_simple())
+```
+
+## Checklist nhanh
+1. Có cờ `g_isRunning` để chống double-click.
+2. Có status text để user biết đang chạy gì.
+3. Mỗi button gọi 1 entry function rõ ràng (`_feature_*`).
+4. Bọc `try/catch/finally` ở layer GUI event.
+5. Không hard-code logic vào callback; tách ra file `features/`.

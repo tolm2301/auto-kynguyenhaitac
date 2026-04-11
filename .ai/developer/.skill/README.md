@@ -1,33 +1,21 @@
-# AHK2 Developer Skills Repository
+# AHK2 Developer Skills
 
-Đây là nơi lưu trữ các skill của Agent để upgrade kỹ năng về sau.
+Kho skill thực chiến cho AutoHotkey2, tập trung vào automation ổn định và dễ bảo trì.
 
-## Danh mục Skills
+## Active Skills
 
-### 1. Window API Skills
-- `window-find.md` - FindWindow, FindWindowEx
-- `window-message.md` - SendMessage, PostMessage
-- `window-control.md` - Control manipulation
+1. `gui-automation.md`
+   - Mẫu xây GUI, event binding, gắn feature vào GUI chính.
 
-### 2. OCR Skills
-- `ocr-tesseract.md` - Tesseract OCR integration
-- `ocr-windows.md` - Windows Media OCR
-- `ocr-image-preprocess.md` - Image preprocessing
+2. `windows-api-and-control.md`
+   - Chọn chiến lược Win/API/Control, wrapper `DllCall`, gửi message an toàn.
 
-### 3. Image Search Skills
-- `imagesearch-basic.md` - Basic ImageSearch usage
-- `imagesearch-advanced.md` - Region-based search, multi-image
+3. `ocr-imagesearch.md`
+   - Hybrid detect với ImageSearch + OCR, chuẩn hóa text, retry pipeline.
 
-### 4. Performance Skills
-- `perf-dllcall.md` - Optimizing DllCall
-- `perf-thread.md` - Thread management
-- `perf-batch.md` - Batch processing optimization
+4. `debug-and-stability.md`
+   - Logging, timeout, retry, fail-safe, checklist debug nhanh.
 
-### 5. COM Skills
-- `com-excel.md` - Excel automation
-- `com-http.md` - HTTP requests
-- `com-database.md` - Database connections
-
----
-
-*Thêm mới skills khi học được kỹ thuật mới*
+## Usage Rule
+- Khi tạo feature mới: đọc theo thứ tự `gui-automation` -> `windows-api-and-control` -> `ocr-imagesearch` (nếu cần) -> `debug-and-stability`.
+- Skill mới phải có: mục tiêu, pattern code, checklist lỗi thường gặp.

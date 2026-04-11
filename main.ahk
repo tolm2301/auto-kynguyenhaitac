@@ -7,12 +7,12 @@ _log_startup_error(msg) {
 }
 
 #Include gui\gui_main.ahk
-_gui_init()
 
 #include utils\window.ahk
 #include utils\post_message.ahk
 #include utils\date.ahk
 #include utils\OCR.ahk
+#include utils\scheduler.ahk
 
 #include features\enhance.ahk
 #include features\rakhoi.ahk
@@ -25,6 +25,8 @@ _gui_init()
 #include features\tanconghaiquan.ahk
 #include features\hoidapcothuong.ahk
 #include features\giftcode.ahk
+
+_gui_init()
 
 F3:: {
     _win_resize_game()

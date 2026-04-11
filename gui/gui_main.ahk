@@ -1,4 +1,3 @@
-
 isRunning := false
 g_nextEventText := ""
 g_eventTimerEnabled := false
@@ -11,11 +10,11 @@ _gui_init() {
     myGui.Icon := A_ScriptDir . "\resources\icon.ico"
     myGui.AddText("x10 y10 w200 h30", "Nhập số lượt:")
     g_inputCount := myGui.AddEdit("w50 h30 vInputCount x100 y10", "1")
-    g_featureText := myGui.AddText("x10 y75 w200 h30", "Tính năng đang chạy: Chưa có")
+    g_featureText := myGui.AddText("x10 y75 w220 h30", "Tính năng đang chạy: Chưa có")
 
     myTab := myGui.AddTab("x10 y105 w210 h310", ["Main", "Boss", "Phụ trợ"])
 
-    g_nextEventControl := myGui.AddText("x10 y420 w210 h30", "")
+    g_nextEventControl := myGui.AddText("x10 y420 w260 h30", "")
     _update_event_text()
 
     ; Main Tab
@@ -23,11 +22,10 @@ _gui_init() {
     btnDaily := myGui.AddButton("w200 h30 x10 y130", "Daily")
     btnTBC := myGui.AddButton("w200 h30 x10 y165", "Tầm bảo chiến")
 
-    ; Event tab
+    ; Boss Tab (auto by scheduler)
     myTab.UseTab(2)
-    btnPunk := myGui.AddButton("w200 h30 x10 y130", "Rồng Punk")
-    btnKraken := myGui.AddButton("w200 h30 x10 y165", "Kraken")
-    btnKaido := myGui.AddButton("w200 h30 x10 y190", "Kaido")
+    myGui.AddText("x15 y135 w190 h20", "Boss chạy tự động theo giờ")
+    myGui.AddText("x15 y160 w190 h40", "Sửa thời gian trong resources/events.ini")
 
     ; Support tab
     myTab.UseTab(3)
@@ -49,11 +47,6 @@ _gui_init() {
     btnDaily.OnEvent("Click", (*) => _feature_daily())
     btnTBC.OnEvent("Click", (*) => _feature_tam_bao_chien())
 
-    ; Boss Tab
-    btnPunk.OnEvent("Click", (*) => _feature_punk())
-    btnKraken.OnEvent("Click", (*) => _feature_kraken())
-    btnKaido.OnEvent("Click", (*) => _feature_kaido())
-
     ; Support tab
     btnEnhance.OnEvent("Click", (*) => _feature_enhance(g_inputCount.Value))
     btnRaKhoi.OnEvent("Click", (*) => _feature_rakhoi(g_inputCount.Value))
@@ -71,6 +64,7 @@ _gui_init() {
 
     myGui.Show()
     _start_event_timer()
+    _start_activity_scheduler()
 }
 
 _get_next_event_text() {
@@ -78,16 +72,12 @@ _get_next_event_text() {
     if !FileExist(iniPath)
         return "Sự kiện tiếp theo: Không có lịch"
 
-    currentDay := Mod(A_WDay, 7)
-    if (currentDay = 0)
-        currentDay := 7
+    currentDay := _get_weekday_from_ahk()
+    currentHour := Integer(A_Hour)
+    currentMinute := Integer(A_Min)
 
-    currentHour := A_Hour
-    currentMinute := A_Min
-
-    if (currentHour >= 22) {
+    if (currentHour >= 22)
         return "Trạng thái: Kết thúc hoạt động"
-    }
 
     eventList := []
     loop read iniPath {
@@ -105,9 +95,8 @@ _get_next_event_text() {
         days := StrSplit(daysStr, ",")
         for day in days {
             day := Integer(Trim(day))
-            if (day = currentDay) {
+            if (day = currentDay)
                 eventList.Push({name: eventName, hour: eventHour, minute: eventMinute, day: day})
-            }
         }
     }
 
@@ -125,26 +114,21 @@ _get_next_event_text() {
         }
     }
 
-    if (nextEvent = "") {
+    if (nextEvent = "")
         return "Sự kiện tiếp theo: Không còn hôm nay"
-    }
 
-    hours := nextEvent.hour
-    minutes := nextEvent.minute
-    timeStr := Format("{:02}:{:02}", hours, minutes)
-
+    timeStr := Format("{:02}:{:02}", nextEvent.hour, nextEvent.minute)
     return "Sự kiện tiếp theo: " . nextEvent.name . " - " . timeStr
 }
 
 _update_event_text() {
     global g_nextEventControl
-    newText := _get_next_event_text()
-    g_nextEventControl.Value := newText
+    g_nextEventControl.Value := _get_next_event_text()
 }
 
 _start_event_timer() {
     global g_eventTimerEnabled
-    if (!g_eventTimerEnabled) {
+    if !g_eventTimerEnabled {
         g_eventTimerEnabled := true
         SetTimer(_update_event_text, 60000)
     }

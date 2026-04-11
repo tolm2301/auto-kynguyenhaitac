@@ -124,7 +124,7 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2) {
     DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdcWindow)
     DllCall("DeleteDC", "Ptr", hdcMem)
 
-    result := OCR.FromBitmap(hbm, {lang: "en"})
+    result := OCR.FromBitmap(hbm)
     DllCall("DeleteObject", "Ptr", hbm)
 
     text := result.Text
