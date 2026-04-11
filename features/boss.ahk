@@ -31,18 +31,18 @@ _feature_punk() {
         Sleep 1000
     }
 
-    endTick := A_TickCount + 15 * 60 * 1000
-    while true {
-        if !isRunning
-            return
-        if (A_TickCount >= endTick)
-            return
+    ; endTick := A_TickCount + 15 * 60 * 1000
+    ; while true {
+    ;     if !isRunning
+    ;         return
+    ;     if (A_TickCount >= endTick)
+    ;         return
 
-        for hwnd in hwnds {
-            _click_post(hwnd, 748, 156)
-        }
-        Sleep 2000
-    }
+    ;     for hwnd in hwnds {
+    ;         _click_post(hwnd, 748, 156)
+    ;     }
+    ;     Sleep 2000
+    ; }
 }
 
 _feature_kraken() {
@@ -70,18 +70,18 @@ _feature_kraken() {
         Sleep 1000
     }
 
-    endTick := A_TickCount + 15 * 60 * 1000
-    while true {
-        if !isRunning
-            return
-        if (A_TickCount >= endTick)
-            return
+    ; endTick := A_TickCount + 15 * 60 * 1000
+    ; while true {
+    ;     if !isRunning
+    ;         return
+    ;     if (A_TickCount >= endTick)
+    ;         return
 
-        for hwnd in hwnds {
-            _click_post(hwnd, 748, 156)
-        }
-        Sleep 2000
-    }
+    ;     for hwnd in hwnds {
+    ;         _click_post(hwnd, 748, 156)
+    ;     }
+    ;     Sleep 2000
+    ; }
 }
 
 _feature_kaido() {
