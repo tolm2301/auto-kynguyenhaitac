@@ -1,6 +1,8 @@
 _feature_haitacthongthai() {
     global isRunning, g_featureText
 
+    _httt_reset_log()
+
     _win_resize_list()
     hwnds := _win_get_list()
     if (hwnds.Length = 0)
@@ -106,8 +108,9 @@ _httt_pick_answer(answerText, optionMap) {
     if (bestLetter = "")
         return { letter: "", score: bestScore }
 
-    if (bestScore < 0.72 || gap < 0.08) {
+    if (bestScore < 0.40) {
         _httt_log("Do tin cay thap (HTTT random ABCD), bo qua cau hoi")
+        MsgBox("Độ tin cậy thấp, không auto click.`nĐáp án data: " . answerText, "HTTT - Cần xử lý tay")
         return { letter: "", score: bestScore }
     }
 
@@ -179,8 +182,15 @@ _httt_clean_question_text(text) {
 
 _httt_find_fuzzy_match(iniPath, section, searchStr, threshold := 0.6) {
     bestScore := 0
+    bestTie := -1
     matchedQ := ""
     matchedA := ""
+    candidates := []
+
+    searchNorm := _httt_normalize_question_for_match(searchStr)
+    if (searchNorm = "")
+        return { Score: 0 }
+    searchCompact := StrReplace(searchNorm, " ", "")
 
     try {
         allData := IniRead(iniPath, section)
@@ -198,19 +208,120 @@ _httt_find_fuzzy_match(iniPath, section, searchStr, threshold := 0.6) {
 
         fileQ := SubStr(A_LoopField, 1, pos - 1)
         fileA := SubStr(A_LoopField, pos + 1)
-        currentScore := _httt_str_diff(searchStr, fileQ)
+        fileNorm := _httt_normalize_question_for_match(fileQ)
+        fileCompact := StrReplace(fileNorm, " ", "")
+        charScore := _httt_str_diff(searchCompact, fileCompact)
+        tokenScore := _httt_question_token_overlap_score(searchNorm, fileNorm)
+        blendScore := (charScore * 0.65 + tokenScore * 0.35)
+        currentScore := Max(charScore, tokenScore, blendScore)
+        tieBreaker := (tokenScore * 0.001) + (charScore * 0.0001)
 
-        if (currentScore > bestScore) {
+        if (currentScore >= threshold) {
+            _httt_insert_candidate_sorted(candidates, {
+                score: currentScore,
+                token: tokenScore,
+                char: charScore,
+                blend: blendScore,
+                tie: tieBreaker,
+                question: fileQ
+            })
+        }
+
+        if (currentScore > bestScore || (Abs(currentScore - bestScore) < 0.000001 && tieBreaker > bestTie)) {
             bestScore := currentScore
+            bestTie := tieBreaker
             matchedQ := fileQ
             matchedA := fileA
         }
     }
 
+    _httt_log_threshold_candidates(candidates, threshold)
+
     if (bestScore >= threshold)
         return { Score: bestScore, Question: matchedQ, Answer: matchedA }
 
     return { Score: 0 }
+}
+
+_httt_insert_candidate_sorted(candidates, candidate) {
+    if (candidates.Length = 0) {
+        candidates.Push(candidate)
+        return
+    }
+
+    inserted := false
+    loop candidates.Length {
+        idx := A_Index
+        if (candidate.score > candidates[idx].score || (Abs(candidate.score - candidates[idx].score) < 0.000001 && candidate.tie > candidates[idx].tie)) {
+            candidates.InsertAt(idx, candidate)
+            inserted := true
+            break
+        }
+    }
+
+    if !inserted
+        candidates.Push(candidate)
+}
+
+_httt_log_threshold_candidates(candidates, threshold) {
+    if (candidates.Length = 0) {
+        _httt_log("Threshold candidates | >= " . threshold . " | none")
+        return
+    }
+
+    _httt_log("Threshold candidates | >= " . threshold . " | count=" . candidates.Length)
+    for item in candidates {
+        _httt_log("Candidate | score=" . Format("{:.6f}", item.score) . " | token=" . Format("{:.6f}", item.token) . " | char=" . Format("{:.6f}", item.char) . " | blend=" . Format("{:.6f}", item.blend) . " | tie=" . Format("{:.6f}", item.tie) . " | Q=" . item.question)
+    }
+}
+
+_httt_normalize_question_for_match(text) {
+    t := StrLower(Trim(text))
+    t := RegExReplace(t, "(?i)thoi\s*gian\s*tra\s*loi\s*con.*$", "")
+    t := RegExReplace(t, "[^a-z0-9]+", " ")
+    t := RegExReplace(t, "\s+", " ")
+    return Trim(t)
+}
+
+_httt_question_token_overlap_score(a, b) {
+    aa := _httt_split_tokens_for_match(a)
+    bb := _httt_split_tokens_for_match(b)
+    if (aa.Length = 0 || bb.Length = 0)
+        return 0
+
+    hit := 0
+    for token in aa {
+        if _httt_array_has_token(bb, token)
+            hit += 1
+    }
+    return hit / aa.Length
+}
+
+_httt_split_tokens_for_match(text) {
+    tokens := []
+    if (text = "")
+        return tokens
+
+    i := 1
+    while (i <= StrLen(text)) {
+        if RegExMatch(SubStr(text, i), "^[a-z0-9]{3,}", &m) {
+            tokens.Push(m[0])
+            i += StrLen(m[0])
+        } else {
+            i += 1
+        }
+    }
+    return tokens
+}
+
+_httt_array_has_token(arr, token) {
+    for v in arr {
+        if (v = token)
+            return true
+        if InStr(v, token) || InStr(token, v)
+            return true
+    }
+    return false
 }
 
 _httt_str_diff(s1, s2) {
@@ -251,4 +362,13 @@ _httt_log(msg) {
     logPath := logDir . "\haitacthongthai.log"
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
     FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+}
+
+_httt_reset_log() {
+    logDir := A_ScriptDir . "\logs"
+    if !DirExist(logDir)
+        DirCreate(logDir)
+
+    logPath := logDir . "\haitacthongthai.log"
+    try FileDelete(logPath)
 }

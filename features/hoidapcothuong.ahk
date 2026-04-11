@@ -1,6 +1,8 @@
 _feature_hoidapcothuong() {
     global isRunning, g_featureText
 
+    _hoidap_reset_log()
+
     _win_resize_list()
     hwnds := _win_get_list()
     if (hwnds.Length = 0)
@@ -15,24 +17,31 @@ _feature_hoidapcothuong() {
 
 _hoidap_auto_answer(hwnd) {
     iniPath := A_ScriptDir . "\resources\Question.ini"
-    section := _hoidap_get_section()
+    snapshotText := _hoidap_read_quiz_snapshot(hwnd)
+    parsed := _hoidap_parse_quiz_snapshot(snapshotText)
 
-    questionText := _hoidap_read_question(hwnd)
+    questionText := parsed.question
+    if (questionText = "")
+        questionText := _hoidap_read_question(hwnd)
     questionText := _hoidap_clean_question_text(questionText)
     if (Trim(questionText) = "") {
         _hoidap_log("OCR câu hỏi rỗng")
         return
     }
 
-    bestMatch := FindFuzzyMatch(iniPath, section, questionText, 0.4)
+    bestMatch := FindBestFuzzyMatchAcrossIni(iniPath, questionText, 0.4)
     if (bestMatch.Score <= 0) {
         _hoidap_log("Không tìm thấy câu hỏi đủ match (>=0.4) | OCR Q: " . questionText)
         return
     }
 
-    _hoidap_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
+    _hoidap_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | section=" . bestMatch.Section . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
 
     optionMap := _hoidap_read_option_map(hwnd)
+    for letter in ["A", "B", "C"] {
+        if (Trim(optionMap[letter]) = "" && parsed.options.Has(letter) && Trim(parsed.options[letter]) != "")
+            optionMap[letter] := parsed.options[letter]
+    }
     _hoidap_log_game_options(optionMap)
     result := _pick_answer_letter_from_option_map(bestMatch.Answer, optionMap)
     answerLetter := result.letter
@@ -62,7 +71,29 @@ _hoidap_get_section() {
 }
 
 _hoidap_read_question(hwnd) {
-    return _ocr_from_bit_map(hwnd, 629, 146, 828, 189)
+    return _ocr_from_bit_map(hwnd, 250, 146, 930, 190)
+}
+
+_hoidap_read_quiz_snapshot(hwnd) {
+    return _ocr_from_bit_map(hwnd, 250, 146, 930, 292)
+}
+
+_hoidap_parse_quiz_snapshot(text) {
+    src := StrReplace(text, "`r", "")
+    src := RegExReplace(src, "\s+", " ")
+    result := {question: "", options: Map("A", "", "B", "", "C", "")}
+
+    if RegExMatch(src, "i)cau\s*hoi\s*[:\-]?\s*(.+?)(?=\bA\s*[:\-\.)])", &mq)
+        result.question := Trim(mq[1])
+    if RegExMatch(src, "i)\bA\s*[:\-\.)]\s*(.+?)(?=\bB\s*[:\-\.)])", &mA)
+        result.options["A"] := Trim(mA[1])
+    if RegExMatch(src, "i)\bB\s*[:\-\.)]\s*(.+?)(?=\bC\s*[:\-\.)])", &mB)
+        result.options["B"] := Trim(mB[1])
+    if RegExMatch(src, "i)\bC\s*[:\-\.)]\s*(.+?)(?=\bXac\s*dinh|$)", &mC)
+        result.options["C"] := Trim(mC[1])
+
+    _hoidap_log("OCR snapshot | " . src)
+    return result
 }
 
 _hoidap_get_option_config() {
@@ -149,7 +180,7 @@ _pick_answer_letter_from_option_map(answerText, optionMap) {
     if (bestLetter = "")
         return {letter: "", score: 0.0, expected: expected}
 
-    if (bestScore < 0.72 || gap < 0.08) {
+    if (bestScore < 0.40) {
         if (fallbackLetter != "") {
             _hoidap_log("Do tin cay thap, fallback theo INI letter=" . fallbackLetter)
             return {letter: fallbackLetter, score: bestScore, expected: expected}
@@ -254,6 +285,15 @@ _hoidap_log(msg) {
     FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
 }
 
+_hoidap_reset_log() {
+    logDir := A_ScriptDir . "\logs"
+    if !DirExist(logDir)
+        DirCreate(logDir)
+
+    logPath := logDir . "\hoidap.log"
+    try FileDelete(logPath)
+}
+
 FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
     BestScore := 0
     MatchedQ := ""
@@ -297,6 +337,111 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
         return {Score: BestScore, Question: MatchedQ, Answer: MatchedA}
 
     return {Score: 0}
+}
+
+FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.4) {
+    BestScore := 0
+    MatchedQ := ""
+    MatchedA := ""
+    MatchedSection := ""
+    bestTie := -1
+    candidates := []
+
+    searchNorm := _normalize_question_for_match(SearchStr)
+    if (searchNorm = "")
+        return {Score: 0}
+    searchCompact := StrReplace(searchNorm, " ", "")
+
+    if !FileExist(IniPath)
+        return {Score: 0}
+
+    currentSection := ""
+    loop read IniPath {
+        row := Trim(A_LoopReadLine)
+        if (row = "")
+            continue
+
+        if RegExMatch(row, "^\[(.+)\]$", &mSec) {
+            currentSection := Trim(mSec[1])
+            continue
+        }
+
+        pos := InStr(row, "=")
+        if !pos
+            continue
+
+        fileQ := Trim(SubStr(row, 1, pos - 1))
+        fileA := Trim(SubStr(row, pos + 1))
+        if (fileQ = "" || fileA = "")
+            continue
+
+        fileNorm := _normalize_question_for_match(fileQ)
+        fileCompact := StrReplace(fileNorm, " ", "")
+        charScore := StrDiff(searchCompact, fileCompact)
+        tokenScore := _question_token_overlap_score(searchNorm, fileNorm)
+        blendScore := (charScore * 0.65 + tokenScore * 0.35)
+        currentScore := Max(charScore, tokenScore, blendScore)
+        tieBreaker := (tokenScore * 0.001) + (charScore * 0.0001)
+
+        if (currentScore >= Threshold) {
+            _hoidap_insert_candidate_sorted(candidates, {
+                score: currentScore,
+                token: tokenScore,
+                char: charScore,
+                blend: blendScore,
+                tie: tieBreaker,
+                section: currentSection,
+                question: fileQ
+            })
+        }
+
+        if (currentScore > BestScore || (Abs(currentScore - BestScore) < 0.000001 && tieBreaker > ((MatchedQ = "") ? -1 : bestTie))) {
+            BestScore := currentScore
+            MatchedQ := fileQ
+            MatchedA := fileA
+            MatchedSection := currentSection
+            bestTie := tieBreaker
+        }
+    }
+
+    _hoidap_log_threshold_candidates(candidates, Threshold)
+
+    if (BestScore < Threshold)
+        return {Score: 0}
+
+    return {Score: BestScore, Question: MatchedQ, Answer: MatchedA, Section: MatchedSection}
+}
+
+_hoidap_insert_candidate_sorted(candidates, candidate) {
+    if (candidates.Length = 0) {
+        candidates.Push(candidate)
+        return
+    }
+
+    inserted := false
+    loop candidates.Length {
+        idx := A_Index
+        if (candidate.score > candidates[idx].score || (Abs(candidate.score - candidates[idx].score) < 0.000001 && candidate.tie > candidates[idx].tie)) {
+            candidates.InsertAt(idx, candidate)
+            inserted := true
+            break
+        }
+    }
+
+    if !inserted
+        candidates.Push(candidate)
+}
+
+_hoidap_log_threshold_candidates(candidates, threshold) {
+    if (candidates.Length = 0) {
+        _hoidap_log("Threshold candidates | >= " . threshold . " | none")
+        return
+    }
+
+    _hoidap_log("Threshold candidates | >= " . threshold . " | count=" . candidates.Length)
+    for item in candidates {
+        _hoidap_log("Candidate | score=" . Format("{:.6f}", item.score) . " | token=" . Format("{:.6f}", item.token) . " | char=" . Format("{:.6f}", item.char) . " | blend=" . Format("{:.6f}", item.blend) . " | tie=" . Format("{:.6f}", item.tie) . " | section=" . item.section . " | Q=" . item.question)
+    }
 }
 
 _normalize_question_for_match(text) {
