@@ -172,11 +172,32 @@ _scheduler_is_supported_event(eventName) {
 }
 
 _scheduler_log(msg) {
+    static lastLogDate := ""
+
     logDir := A_ScriptDir . "\logs"
     if !DirExist(logDir)
         DirCreate(logDir)
 
     logPath := logDir . "\scheduler.log"
+    today := FormatTime(A_Now, "yyyy-MM-dd")
+
+    if (lastLogDate = "") {
+        if FileExist(logPath) {
+            firstLine := ""
+            try firstLine := FileRead(logPath, "UTF-8")
+            if (firstLine != "") {
+                if RegExMatch(firstLine, "\[(\d{4}-\d{2}-\d{2})", &m) {
+                    if (m[1] != today)
+                        try FileDelete(logPath)
+                }
+            }
+        }
+        lastLogDate := today
+    } else if (lastLogDate != today) {
+        try FileDelete(logPath)
+        lastLogDate := today
+    }
+
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
     FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
 }

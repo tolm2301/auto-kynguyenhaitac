@@ -17,7 +17,7 @@ _feature_punk() {
 
     for hwnd in hwnds {
         _click_post(hwnd, 729, 35)
-        Sleep 2000
+        Sleep 3000
         _click_post(hwnd, 339, 200)
         Sleep 1000
         _click_post(hwnd, 893, 558)
@@ -56,7 +56,7 @@ _feature_kraken() {
 
     for hwnd in hwnds {
         _click_post(hwnd, 729, 35)
-        Sleep 1000
+        Sleep 3000
         _click_post(hwnd, 402, 259)
         Sleep 1000
         _click_post(hwnd, 893, 558)
