@@ -124,9 +124,9 @@ _httt_click_answer(hwnd, answerLetter) {
         return false
 
     _click_post(hwnd, cfg[answerLetter].clickX, cfg[answerLetter].clickY)
-    Sleep 250
+    Sleep 500
     _click_post(hwnd, confirm.x, confirm.y)
-    Sleep 600
+    Sleep 500
     return true
 }
 

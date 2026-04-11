@@ -126,9 +126,9 @@ _click_hoidap_answer(hwnd, answerLetter) {
         return false
 
     _click_post(hwnd, cfg[answerLetter].clickX, cfg[answerLetter].clickY)
-    Sleep 1000
-    ; _click_post(hwnd, confirm.x, confirm.y)
-    ; Sleep 1000
+    Sleep 500
+    _click_post(hwnd, confirm.x, confirm.y)
+    Sleep 500
     return true
 }
 
