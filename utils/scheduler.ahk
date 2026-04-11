@@ -47,7 +47,7 @@ _scheduler_get_due_event() {
         return ""
 
     currentDay := _get_weekday_from_ahk()
-    nowMinutes := Integer(A_Hour) * 60 + Integer(A_Min)
+    nowMinutes := Integer(getHour()) * 60 + Integer(getMinute())
     dueEvent := ""
     dueMinutes := -1
 

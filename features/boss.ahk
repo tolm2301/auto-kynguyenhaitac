@@ -1,9 +1,9 @@
 _now_hour() {
-    return Integer(A_Hour)
+    return Integer(getHour())
 }
 
 _now_minute() {
-    return Integer(A_Min)
+    return Integer(getMinute())
 }
 
 _feature_punk() {
