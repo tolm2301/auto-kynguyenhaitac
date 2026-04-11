@@ -16,6 +16,7 @@ _feature_haitacthongthai() {
 
 
     questionText := _httt_read_question(hwnd)
+    questionText := _httt_clean_question_text(questionText)
     if (Trim(questionText) = "") {
         _httt_log("OCR câu hỏi rỗng")
         return
@@ -44,15 +45,15 @@ _feature_haitacthongthai() {
 }
 
 _httt_read_question(hwnd) {
-    return _ocr_from_bit_map(hwnd, 294, 190, 977, 329)
+    return _ocr_from_bit_map(hwnd, 294, 190, 977, 340)
 }
 
 _httt_get_option_config() {
     static cfg := Map(
-        "A", { ocrX1: 300, ocrY1: 355, ocrX2: 974, ocrY2: 397, clickX: 318, clickY: 373 },
-        "B", { ocrX1: 300, ocrY1: 407, ocrX2: 974, ocrY2: 450, clickX: 318, clickY: 425 },
-        "C", { ocrX1: 300, ocrY1: 462, ocrX2: 974, ocrY2: 506, clickX: 318, clickY: 478 },
-        "D", { ocrX1: 300, ocrY1: 515, ocrX2: 974, ocrY2: 556, clickX: 318, clickY: 532 }
+        "A", { ocrX1: 290, ocrY1: 352, ocrX2: 974, ocrY2: 403, clickX: 318, clickY: 377 },
+        "B", { ocrX1: 290, ocrY1: 405, ocrX2: 974, ocrY2: 457, clickX: 318, clickY: 430 },
+        "C", { ocrX1: 290, ocrY1: 460, ocrX2: 974, ocrY2: 509, clickX: 318, clickY: 486 },
+        "D", { ocrX1: 290, ocrY1: 516, ocrX2: 974, ocrY2: 559, clickX: 318, clickY: 534 }
     )
     return cfg
 }
@@ -76,6 +77,7 @@ _httt_pick_answer(answerText, optionMap) {
     expected := _httt_normalize(_httt_extract_answer_value(answerText))
     bestLetter := ""
     bestScore := -1.0
+    secondScore := -1.0
     scoreLog := ""
 
     for letter in ["A", "B", "C", "D"] {
@@ -90,12 +92,25 @@ _httt_pick_answer(answerText, optionMap) {
         scoreLog .= letter . "=" . Format("{:.3f}", score) . " "
 
         if (score > bestScore) {
+            secondScore := bestScore
             bestScore := score
             bestLetter := letter
+        } else if (score > secondScore) {
+            secondScore := score
         }
     }
 
-    _httt_log("Answer score | expected=" . expected . " | " . Trim(scoreLog) . "| pick=" . bestLetter)
+    gap := bestScore - secondScore
+    _httt_log("Answer score | expected=" . expected . " | " . Trim(scoreLog) . "| best=" . Format("{:.3f}", bestScore) . " second=" . Format("{:.3f}", secondScore) . " gap=" . Format("{:.3f}", gap) . " pick=" . bestLetter)
+
+    if (bestLetter = "")
+        return { letter: "", score: bestScore }
+
+    if (bestScore < 0.72 || gap < 0.08) {
+        _httt_log("Do tin cay thap (HTTT random ABCD), bo qua cau hoi")
+        return { letter: "", score: bestScore }
+    }
+
     return { letter: bestLetter, score: bestScore }
 }
 
@@ -107,14 +122,14 @@ _httt_click_answer(hwnd, answerLetter) {
 
     _click_post(hwnd, cfg[answerLetter].clickX, cfg[answerLetter].clickY)
     Sleep 250
-    ; _click_post(hwnd, confirm.x, confirm.y)
-    ; Sleep 600
+    _click_post(hwnd, confirm.x, confirm.y)
+    Sleep 600
     return true
 }
 
 _httt_extract_answer_value(answerText) {
     text := Trim(answerText)
-    if RegExMatch(text, "^[ABCabc]\s*[:\-\.)]\s*(.+)$", &m)
+    if RegExMatch(text, "^[ABCDabcd]\s*[:\-\.)]\s*(.+)$", &m)
         return Trim(m[1])
     return text
 }
@@ -123,22 +138,43 @@ _httt_extract_option_value(optionText, letter) {
     text := Trim(StrReplace(optionText, "`r", ""))
     if RegExMatch(text, "^" . letter . "\s*[:\-\.)]\s*(.+)$", &m)
         return Trim(m[1])
-    if RegExMatch(text, "^[ABCabc]\s*[:\-\.)]\s*(.+)$", &m)
+    if RegExMatch(text, "^[ABCDabcd]\s*[:\-\.)]\s*(.+)$", &m)
         return Trim(m[1])
     return text
 }
 
 _httt_normalize(text) {
     value := StrLower(Trim(text))
-    value := RegExReplace(value, "^[abc]\s*[:\-\.)]\s*", "")
+    value := RegExReplace(value, "^[abcd]\s*[:\-\.)]\s*", "")
     value := RegExReplace(value, "[^a-z0-9]+", "")
     return value
 }
 
 _httt_similarity(a, b) {
+    numA := _httt_extract_number_token(a)
+    numB := _httt_extract_number_token(b)
+    if (numA != "" || numB != "") {
+        if (numA = numB && numA != "")
+            return 1.0
+        return 0.1
+    }
+
     if (a = b)
         return 1.0
     return _httt_str_diff(a, b)
+}
+
+_httt_extract_number_token(text) {
+    if RegExMatch(text, "(\d+(?:[\.,]\d+)?)", &m)
+        return StrReplace(m[1], ",", ".")
+    return ""
+}
+
+_httt_clean_question_text(text) {
+    q := Trim(text)
+    q := RegExReplace(q, "(?i)thoi\s*gian\s*tra\s*loi\s*con.*$", "")
+    q := RegExReplace(q, "\s+", " ")
+    return Trim(q)
 }
 
 _httt_find_fuzzy_match(iniPath, section, searchStr, threshold := 0.6) {

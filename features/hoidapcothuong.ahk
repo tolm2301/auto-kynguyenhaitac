@@ -18,6 +18,7 @@ _hoidap_auto_answer(hwnd) {
     section := _hoidap_get_section()
 
     questionText := _hoidap_read_question(hwnd)
+    questionText := _hoidap_clean_question_text(questionText)
     if (Trim(questionText) = "") {
         _hoidap_log("OCR câu hỏi rỗng")
         return
@@ -61,7 +62,7 @@ _hoidap_get_section() {
 }
 
 _hoidap_read_question(hwnd) {
-    return _ocr_from_bit_map(hwnd, 634, 154, 884, 186)
+    return _ocr_from_bit_map(hwnd, 629, 146, 828, 189)
 }
 
 _hoidap_get_option_config() {
@@ -102,11 +103,13 @@ _click_hoidap_answer(hwnd, answerLetter) {
 
 _pick_answer_letter_from_option_map(answerText, optionMap) {
     expected := _normalize_qa_text(_extract_answer_value(answerText))
+    fallbackLetter := _extract_answer_letter(answerText)
     if (expected = "")
         return {letter: "", score: 0.0, expected: expected}
 
     bestLetter := ""
     bestScore := -1.0
+    secondScore := -1.0
     detail := ""
     hasAnyOptionText := false
 
@@ -125,15 +128,18 @@ _pick_answer_letter_from_option_map(answerText, optionMap) {
         detail .= letter . "=" . Format("{:.3f}", score) . "(" . optionNorm . ") "
 
         if (score > bestScore) {
+            secondScore := bestScore
             bestScore := score
             bestLetter := letter
+        } else if (score > secondScore) {
+            secondScore := score
         }
     }
 
-    _hoidap_log("Answer score | expected=" . expected . " | " . Trim(detail) . "| pick=" . bestLetter)
+    gap := bestScore - secondScore
+    _hoidap_log("Answer score | expected=" . expected . " | " . Trim(detail) . "| best=" . Format("{:.3f}", bestScore) . " second=" . Format("{:.3f}", secondScore) . " gap=" . Format("{:.3f}", gap) . " pick=" . bestLetter)
 
     if !hasAnyOptionText {
-        fallbackLetter := _extract_answer_letter(answerText)
         if (fallbackLetter != "") {
             _hoidap_log("Answer OCR rong, fallback theo INI letter=" . fallbackLetter)
             return {letter: fallbackLetter, score: 0.0, expected: expected}
@@ -142,6 +148,15 @@ _pick_answer_letter_from_option_map(answerText, optionMap) {
 
     if (bestLetter = "")
         return {letter: "", score: 0.0, expected: expected}
+
+    if (bestScore < 0.72 || gap < 0.08) {
+        if (fallbackLetter != "") {
+            _hoidap_log("Do tin cay thap, fallback theo INI letter=" . fallbackLetter)
+            return {letter: fallbackLetter, score: bestScore, expected: expected}
+        }
+        _hoidap_log("Do tin cay thap, bo qua cau hoi")
+        return {letter: "", score: bestScore, expected: expected}
+    }
 
     return {letter: bestLetter, score: bestScore, expected: expected}
 }
@@ -189,6 +204,14 @@ _extract_option_value_from_ocr(optionText, letter) {
 }
 
 _hoidap_similarity(expectedNorm, candidateNorm) {
+    numA := _hoidap_extract_number_token(expectedNorm)
+    numB := _hoidap_extract_number_token(candidateNorm)
+    if (numA != "" || numB != "") {
+        if (numA = numB && numA != "")
+            return 1.0
+        return 0.1
+    }
+
     if (expectedNorm = candidateNorm)
         return 1.0
 
@@ -199,6 +222,19 @@ _hoidap_similarity(expectedNorm, candidateNorm) {
     }
 
     return StrDiff(expectedNorm, candidateNorm)
+}
+
+_hoidap_extract_number_token(text) {
+    if RegExMatch(text, "(\d+(?:[\.,]\d+)?)", &m)
+        return StrReplace(m[1], ",", ".")
+    return ""
+}
+
+_hoidap_clean_question_text(text) {
+    q := Trim(text)
+    q := RegExReplace(q, "(?i)thoi\s*gian\s*tra\s*loi\s*con.*$", "")
+    q := RegExReplace(q, "\s+", " ")
+    return Trim(q)
 }
 
 _normalize_qa_text(text) {
@@ -223,6 +259,11 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
     MatchedQ := ""
     MatchedA := ""
 
+    searchNorm := _normalize_question_for_match(SearchStr)
+    if (searchNorm = "")
+        return {Score: 0}
+    searchCompact := StrReplace(searchNorm, " ", "")
+
     try {
         AllData := IniRead(IniPath, Section)
     } catch {
@@ -239,7 +280,11 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
 
         FileQ := SubStr(A_LoopField, 1, Pos - 1)
         FileA := SubStr(A_LoopField, Pos + 1)
-        CurrentScore := StrDiff(SearchStr, FileQ)
+        fileNorm := _normalize_question_for_match(FileQ)
+        fileCompact := StrReplace(fileNorm, " ", "")
+        charScore := StrDiff(searchCompact, fileCompact)
+        tokenScore := _question_token_overlap_score(searchNorm, fileNorm)
+        CurrentScore := Max(charScore, tokenScore, (charScore * 0.65 + tokenScore * 0.35))
 
         if (CurrentScore > BestScore) {
             BestScore := CurrentScore
@@ -252,6 +297,63 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
         return {Score: BestScore, Question: MatchedQ, Answer: MatchedA}
 
     return {Score: 0}
+}
+
+_normalize_question_for_match(text) {
+    t := StrLower(Trim(text))
+    t := RegExReplace(t, "(?i)thoi\s*gian\s*tra\s*loi\s*con.*$", "")
+
+    ; Sửa nhanh vài lỗi OCR phổ biến kiểu Mon/M6n, ghetlä, ...
+    t := RegExReplace(t, "(?<=[a-z])[06](?=[a-z])", "o")
+    t := RegExReplace(t, "(?<=[a-z])1(?=[a-z])", "i")
+    t := RegExReplace(t, "(?<=[a-z])5(?=[a-z])", "s")
+    t := RegExReplace(t, "(?<=[a-z])4(?=[a-z])", "a")
+
+    t := RegExReplace(t, "[^a-z0-9]+", " ")
+    t := RegExReplace(t, "\s+", " ")
+    return Trim(t)
+}
+
+_question_token_overlap_score(a, b) {
+    aa := _split_tokens_for_match(a)
+    bb := _split_tokens_for_match(b)
+    if (aa.Length = 0 || bb.Length = 0)
+        return 0
+
+    hit := 0
+    for token in aa {
+        if _array_has_token(bb, token)
+            hit += 1
+    }
+    return hit / aa.Length
+}
+
+_split_tokens_for_match(text) {
+    tokens := []
+    if (text = "")
+        return tokens
+
+    ; Tách theo nhóm chữ/số để không phụ thuộc khoảng trắng OCR
+    i := 1
+    while (i <= StrLen(text)) {
+        if RegExMatch(SubStr(text, i), "^[a-z0-9]{3,}", &m) {
+            tokens.Push(m[0])
+            i += StrLen(m[0])
+        } else {
+            i += 1
+        }
+    }
+    return tokens
+}
+
+_array_has_token(arr, token) {
+    for v in arr {
+        if (v = token)
+            return true
+        if InStr(v, token) || InStr(token, v)
+            return true
+    }
+    return false
 }
 
 StrDiff(s1, s2) {

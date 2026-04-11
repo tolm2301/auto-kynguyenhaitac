@@ -110,7 +110,7 @@ _win_resize_game_1() {
     }
 }
 
-_ocr_from_bit_map(hwnd, x1, y1, x2, y2) {
+_ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
     x := x1
     y := y1
     w := x2 - x1
@@ -124,15 +124,57 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2) {
     DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdcWindow)
     DllCall("DeleteDC", "Ptr", hdcMem)
 
-    result := OCR.FromBitmap(hbm)
+    options := _ocr_default_options(ocrOptions)
+    result := OCR.FromBitmap(hbm, options)
+
+    text := _normalize_ocr_text(result.Text)
+    if _ocr_text_low_quality(text) {
+        retry := _ocr_retry_options(options)
+        retryResult := OCR.FromBitmap(hbm, retry)
+        retryText := _normalize_ocr_text(retryResult.Text)
+        text := _ocr_pick_better_text(text, retryText)
+    }
+
     DllCall("DeleteObject", "Ptr", hbm)
 
-    text := result.Text
-
-    ; Normalize text bị lỗi encode
-    text := _normalize_ocr_text(text)
-
     return text
+}
+
+_ocr_default_options(custom := 0) {
+    options := IsObject(custom) ? custom : Map()
+    if !options.Has("lang")
+        options["lang"] := "en-US"
+    if !options.Has("scale")
+        options["scale"] := 1.6
+    if !options.Has("grayscale")
+        options["grayscale"] := 1
+    return options
+}
+
+_ocr_retry_options(baseOptions) {
+    retry := Map()
+    for k, v in baseOptions
+        retry[k] := v
+
+    retry["scale"] := retry.Has("scale") ? Max(2.0, retry["scale"] * 1.25) : 2.4
+    retry["grayscale"] := 1
+    retry["monochrome"] := retry.Has("monochrome") ? retry["monochrome"] : 170
+    retry["invertcolors"] := retry.Has("invertcolors") ? (retry["invertcolors"] ? 0 : 1) : 1
+    return retry
+}
+
+_ocr_text_low_quality(text) {
+    t := Trim(text)
+    if (t = "")
+        return true
+    clean := RegExReplace(t, "[^A-Za-z0-9]", "")
+    return StrLen(clean) < 4
+}
+
+_ocr_pick_better_text(primary, secondary) {
+    p := RegExReplace(primary, "[^A-Za-z0-9]", "")
+    s := RegExReplace(secondary, "[^A-Za-z0-9]", "")
+    return (StrLen(s) > StrLen(p)) ? secondary : primary
 }
 
 _normalize_ocr_text(text) {
