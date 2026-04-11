@@ -26,6 +26,7 @@ _log_startup_error(msg) {
 #include features\hoidapcothuong.ahk
 #include features\haitacthongthai.ahk
 #include features\giftcode.ahk
+#include features\register_event.ahk
 
 _gui_init()
 

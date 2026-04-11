@@ -1,6 +1,7 @@
 g_activitySchedulerEnabled := false
 g_activitySchedulerBusy := false
 g_activityExecutedMap := Map()
+g_schedulerStateLoadedDate := ""
 
 _get_weekday_from_ahk() {
     currentDay := Mod(A_WDay, 7)
@@ -14,8 +15,9 @@ _start_activity_scheduler() {
     if g_activitySchedulerEnabled
         return
 
+    _scheduler_load_executed_state()
     g_activitySchedulerEnabled := true
-    SetTimer(_activity_scheduler_tick, 15000)
+    SetTimer(_activity_scheduler_tick, 5000)
     _activity_scheduler_tick()
 }
 
@@ -26,6 +28,7 @@ _activity_scheduler_tick() {
 
     g_activitySchedulerBusy := true
     try {
+        _scheduler_load_executed_state()
         event := _scheduler_get_due_event()
         if IsObject(event)
             _scheduler_execute_event(event)
@@ -82,6 +85,8 @@ _scheduler_get_due_event() {
         eventTotalMinutes := eventHour * 60 + eventMinute
         if (eventTotalMinutes > nowMinutes)
             continue
+        if ((nowMinutes - eventTotalMinutes) > 1)
+            continue
 
         runKey := FormatTime(A_Now, "yyyyMMdd") . "|" . eventName . "|" . Format("{:02}:{:02}", eventHour, eventMinute)
         if g_activityExecutedMap.Has(runKey)
@@ -104,18 +109,61 @@ _scheduler_get_due_event() {
 _scheduler_execute_event(event) {
     global g_activityExecutedMap, g_featureText
 
-    g_activityExecutedMap[event.runKey] := "running"
+    _scheduler_mark_executed(event.runKey, "running")
     g_featureText.Text := "Tính năng đang chạy (auto): " . event.name
     _scheduler_log("Auto run: " . event.name . " at " . Format("{:02}:{:02}", event.hour, event.minute))
 
     try {
         _scheduler_run_event(event.name)
-        g_activityExecutedMap[event.runKey] := "done"
+        _scheduler_mark_executed(event.runKey, "done")
         _scheduler_log("Completed: " . event.name)
     } catch as err {
-        g_activityExecutedMap[event.runKey] := "failed"
+        _scheduler_mark_executed(event.runKey, "failed")
         _scheduler_log("Failed: " . event.name . " - " . err.Message)
     }
+}
+
+_scheduler_mark_executed(runKey, status) {
+    global g_activityExecutedMap
+
+    firstSeen := !g_activityExecutedMap.Has(runKey)
+    g_activityExecutedMap[runKey] := status
+    if firstSeen
+        _scheduler_append_executed_state(runKey)
+}
+
+_scheduler_load_executed_state() {
+    global g_activityExecutedMap, g_schedulerStateLoadedDate
+
+    today := FormatTime(A_Now, "yyyyMMdd")
+    if (g_schedulerStateLoadedDate = today)
+        return
+
+    g_activityExecutedMap := Map()
+    statePath := _scheduler_get_state_path(today)
+    if FileExist(statePath) {
+        loop read statePath {
+            key := Trim(A_LoopReadLine)
+            if (key != "")
+                g_activityExecutedMap[key] := "persisted"
+        }
+    }
+
+    g_schedulerStateLoadedDate := today
+}
+
+_scheduler_append_executed_state(runKey) {
+    statePath := _scheduler_get_state_path()
+    FileAppend(runKey . "`n", statePath, "UTF-8")
+}
+
+_scheduler_get_state_path(date := "") {
+    logDir := A_ScriptDir . "\\logs"
+    if !DirExist(logDir)
+        DirCreate(logDir)
+
+    d := (date = "") ? FormatTime(A_Now, "yyyyMMdd") : date
+    return logDir . "\\scheduler_state_" . d . ".txt"
 }
 
 _scheduler_run_event(eventName) {
@@ -148,6 +196,8 @@ _scheduler_run_event(eventName) {
             _feature_tanconghaiquan()
         case "Hỏi đáp có thưởng":
             _feature_hoidapcothuong()
+        case "Register Uta World":
+            _feature_register_uta()    
         default:
             throw Error("Event chưa được map feature: " . eventName)
     }
@@ -165,7 +215,8 @@ _scheduler_is_supported_event(eventName) {
         "Năm Mới Phát Tài", true,
         "Ảnh hồn", true,
         "Tấn công hải quân", true,
-        "Hỏi đáp có thưởng", true
+        "Hỏi đáp có thưởng", true,
+        "Register Uta World", true
     )
 
     return supported.Has(eventName)
