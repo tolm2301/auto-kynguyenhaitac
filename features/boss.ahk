@@ -98,7 +98,7 @@ _feature_kraken() {
 
 _feature_kaido() {
     _win_resize_list()
-    g_featureText.text := "Tính năng đang chạy: Kraken"
+    g_featureText.text := "Tính năng đang chạy: Kaido"
     hwnds := _win_get_list()
     global isRunning
     isRunning := true
