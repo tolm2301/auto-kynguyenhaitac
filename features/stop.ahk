@@ -1,7 +1,18 @@
 _feature_stop() {
+    global g_dailyStopFile, g_dailyWorkerPids
+
     g_featureText.text := "Tính năng đang chạy: Chưa có"
     global isRunning
     isRunning := false
+
+    if (IsSet(g_dailyStopFile) and g_dailyStopFile != "")
+        _daily_signal_stop(g_dailyStopFile)
+
+    if (IsSet(g_dailyWorkerPids))
+        _daily_stop_worker_processes(g_dailyWorkerPids)
+
+    g_dailyWorkerPids := []
+    g_dailyStopFile := ""
 }
 
 _feature_tam_bao_chien() {
@@ -22,19 +33,18 @@ _feature_tam_bao_chien() {
         _click_post(hwnd, 1218, 538)
     }
     Sleep 20000
-    for hwnd in hwnds {
-        _click_post(hwnd, 1213, 52)
-    }
-    Sleep FEATUE_SLEEP
 
     while true {
         if !isRunning
             return
 
+        if (Integer(getHour()) = Integer(14)) {
+            g_featureText.text := "Tính năng đang chạy: Chưa có"
+            return
+        }
+
         if Integer(count) >= Integer(TBC_SLEEP) or Integer(count) = Integer(0) {
             for hwnd in hwnds {
-                _click_post(hwnd, 1218, 538)
-                Sleep FEATUE_SLEEP
                 _click_post(hwnd, 1142, 52)
                 Sleep LOAD_SLEEP
                 _click_post(hwnd, 615, 507)

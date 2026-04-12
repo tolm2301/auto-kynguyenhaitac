@@ -1,50 +1,208 @@
 _feature_daily() {
 
+    global isRunning, g_featureText, g_dailyWorkerPids, g_dailyStopFile
+
+    _daily_init_runtime()
+    _win_resize_list()
+    g_featureText.text := "Tính năng đang chạy: Daily"
+    hwnds := _win_get_list()
+    isRunning := true
+
+    g_dailyWorkerPids := []
+    g_dailyStopFile := _daily_build_stop_file()
+
+    for hwnd in hwnds {
+        pid := _daily_start_worker(hwnd, g_dailyStopFile)
+        if (pid > 0)
+            g_dailyWorkerPids.Push(pid)
+    }
+
+    _daily_wait_workers(g_dailyWorkerPids, g_dailyStopFile)
+
+    if FileExist(g_dailyStopFile)
+        try FileDelete(g_dailyStopFile)
+
+    g_dailyStopFile := ""
+    g_dailyWorkerPids := []
+}
+
+_feature_daily_worker_entry(hwnd, stopFile := "") {
+    global isRunning, g_dailyStopFile
+
+    _daily_init_runtime()
+    isRunning := true
+    g_dailyStopFile := stopFile
+
+    _feature_daily_single_hwnd(hwnd)
+}
+
+_daily_init_runtime() {
     global FEATURE_TASK_SLEEP := 4000
     global FEATURE_TASK_LONG_SLEEP := 7000
     global LOAD_SLEEP := 1500
     global EXIT_FEATURE_SLEEP := 3000
+}
 
-    _win_resize_list()
-    g_featureText.text := "Tính năng đang chạy: Daily"
-    hwnds := _win_get_list()
+_feature_daily_single_hwnd(hwnd) {
+    ; === TINH NANG ===
+    if !_daily_should_continue()
+        return
+    _che_do(hwnd)
+    if !_daily_should_continue()
+        return
+    _anh_hon(hwnd)
+    if !_daily_should_continue()
+        return
+    _all_blue(hwnd)
+    if !_daily_should_continue()
+        return
+    _imple_down(hwnd)
+    if !_daily_should_continue()
+        return
+    _dung_luyen(hwnd)
+    if !_daily_should_continue()
+        return
+    _vung_bien_than_bi(hwnd)
+    if !_daily_should_continue()
+        return
+    _haki(hwnd)
+    if !_daily_should_continue()
+        return
+    _nguyen_to(hwnd)
+    if !_daily_should_continue()
+        return
+    _tap_kick(hwnd)
+
+    ; === NHAN VAT ===
+    if !_daily_should_continue()
+        return
+    _tang_qua(hwnd)
+    if !_daily_should_continue()
+        return
+    _bao_thach(hwnd)
+    if !_daily_should_continue()
+        return
+    _tinh_ban(hwnd)
+
+    ; === BEN TRAI ===
+    if !_daily_should_continue()
+        return
+    _ra_khoi(hwnd)
+
+    if !_daily_should_continue()
+        return
+    _linh_treo_thuong(hwnd)
+    if !_daily_should_continue()
+        return
+    _dau_truong(hwnd)
+    if !_daily_should_continue()
+        return
+    _huan_luyen(hwnd)
+    if !_daily_should_continue()
+        return
+    _nau_an(hwnd)
+    if !_daily_should_continue()
+        return
+    _tam_bao(hwnd)
+
+    if !_daily_should_continue()
+        return
+    _cong_hien(hwnd)
+    if !_daily_should_continue()
+        return
+    _linh_the_bai(hwnd)
+    if !_daily_should_continue()
+        return
+    _cuong_hoa_tau_chien(hwnd)
+    if !_daily_should_continue()
+        return
+    _mua_chien_tich(hwnd)
+    if !_daily_should_continue()
+        return
+    _boi_duong_tinh_linh(hwnd)
+    if !_daily_should_continue()
+        return
+    _nhan_thuong_linh_danh_thue(hwnd)
+    if !_daily_should_continue()
+        return
+    _dat_hang(hwnd)
+    if !_daily_should_continue()
+        return
+    _nhon_hop_qua(hwnd)
+}
+
+_daily_should_continue() {
+    global isRunning, g_dailyStopFile
+
+    if (IsSet(isRunning) and !isRunning)
+        return false
+
+    if (IsSet(g_dailyStopFile) and g_dailyStopFile != "" and FileExist(g_dailyStopFile))
+        return false
+
+    return true
+}
+
+_daily_build_stop_file() {
+    logDir := A_ScriptDir . "\logs"
+    if !DirExist(logDir)
+        DirCreate(logDir)
+
+    return logDir . "\daily_stop_" . A_NowUTC . "_" . A_TickCount . ".flag"
+}
+
+_daily_signal_stop(stopFile) {
+    if (stopFile = "")
+        return
+
+    SplitPath(stopFile, , &dirPath)
+    if (dirPath != "" and !DirExist(dirPath))
+        DirCreate(dirPath)
+
+    if !FileExist(stopFile)
+        FileAppend("", stopFile)
+}
+
+_daily_start_worker(hwnd, stopFile) {
+    workerScript := A_ScriptDir . "\features\daily_worker.ahk"
+    if !FileExist(workerScript)
+        return 0
+
+    runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_AhkPath, workerScript, hwnd, stopFile)
+    pid := 0
+    try Run(runCommand, A_ScriptDir, "Hide", &pid)
+
+    return pid
+}
+
+_daily_has_alive_workers(pids) {
+    for pid in pids {
+        if ProcessExist(pid)
+            return true
+    }
+
+    return false
+}
+
+_daily_stop_worker_processes(pids) {
+    for pid in pids {
+        if ProcessExist(pid) {
+            try ProcessClose(pid)
+        }
+    }
+}
+
+_daily_wait_workers(pids, stopFile) {
     global isRunning
-    isRunning := true
 
-    for hwnd in hwnds {
-        ; === TINH NANG ===
-        _che_do(hwnd)
-        _anh_hon(hwnd)
-        _all_blue(hwnd)
-        _imple_down(hwnd)
-        _dung_luyen(hwnd)
-        _vung_bien_than_bi(hwnd)
-        _haki(hwnd)
-        _nguyen_to(hwnd)
-        _tap_kick(hwnd)
+    while _daily_has_alive_workers(pids) {
+        if !isRunning {
+            _daily_signal_stop(stopFile)
+            _daily_stop_worker_processes(pids)
+            break
+        }
 
-        ;; === NHAN VAT ===
-        _tang_qua(hwnd)
-        _bao_thach(hwnd)
-        _tinh_ban(hwnd)
-
-        ; ; === ben trai ===
-        _ra_khoi(hwnd)
-
-        _linh_treo_thuong(hwnd)
-        _dau_truong(hwnd)
-        _huan_luyen(hwnd)
-        _nau_an(hwnd)
-        _tam_bao(hwnd)
-
-        _cong_hien(hwnd)
-        _linh_the_bai(hwnd)
-        _cuong_hoa_tau_chien(hwnd)
-        _mua_chien_tich(hwnd)
-        _boi_duong_tinh_linh(hwnd)
-        _nhan_thuong_linh_danh_thue(hwnd)
-        _dat_hang(hwnd)
-        _nhon_hop_qua(hwnd)
+        Sleep 500
     }
 }
 
