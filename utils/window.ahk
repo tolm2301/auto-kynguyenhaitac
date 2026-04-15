@@ -125,7 +125,7 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
     DllCall("DeleteDC", "Ptr", hdcMem)
 
     options := _ocr_default_options(ocrOptions)
-    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: 3, grayscale: 2})
+    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: 1.7, grayscale: 1})
     text := result.text
 
     ; text := _normalize_ocr_text(result.Text)
