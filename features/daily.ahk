@@ -37,10 +37,10 @@ _feature_daily_worker_entry(hwnd, stopFile := "") {
 }
 
 _daily_init_runtime() {
-    global FEATURE_TASK_SLEEP := 4000
-    global FEATURE_TASK_LONG_SLEEP := 7000
-    global LOAD_SLEEP := 1500
-    global EXIT_FEATURE_SLEEP := 3000
+    global FEATURE_TASK_SLEEP := 5000
+    global FEATURE_TASK_LONG_SLEEP := 15000
+    global LOAD_SLEEP := 2000
+    global EXIT_FEATURE_SLEEP := 7000
 }
 
 _feature_daily_single_hwnd(hwnd) {
