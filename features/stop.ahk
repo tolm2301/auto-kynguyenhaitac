@@ -33,6 +33,10 @@ _feature_tam_bao_chien() {
         _click_post(hwnd, 1218, 538)
     }
     Sleep 20000
+    for hwnd in hwnds {
+        _click_post(hwnd, 1213, 52)
+    }
+    Sleep FEATUE_SLEEP
 
     while true {
         if !isRunning
@@ -45,6 +49,8 @@ _feature_tam_bao_chien() {
 
         if Integer(count) >= Integer(TBC_SLEEP) or Integer(count) = Integer(0) {
             for hwnd in hwnds {
+                _click_post(hwnd, 1218, 538)
+                Sleep FEATUE_SLEEP
                 _click_post(hwnd, 1142, 52)
                 Sleep LOAD_SLEEP
                 _click_post(hwnd, 615, 507)
