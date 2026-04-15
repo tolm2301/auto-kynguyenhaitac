@@ -125,15 +125,16 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
     DllCall("DeleteDC", "Ptr", hdcMem)
 
     options := _ocr_default_options(ocrOptions)
-    result := OCR.FromBitmap(hbm, options)
+    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: 3, grayscale: 2})
+    text := result.text
 
-    text := _normalize_ocr_text(result.Text)
-    if _ocr_text_low_quality(text) {
-        retry := _ocr_retry_options(options)
-        retryResult := OCR.FromBitmap(hbm, retry)
-        retryText := _normalize_ocr_text(retryResult.Text)
-        text := _ocr_pick_better_text(text, retryText)
-    }
+    ; text := _normalize_ocr_text(result.Text)
+    ; if _ocr_text_low_quality(text) {
+    ;     retry := _ocr_retry_options(options)
+    ;     retryResult := OCR.FromBitmap(hbm, retry)
+    ;     retryText := _normalize_ocr_text(retryResult.Text)
+    ;     text := _ocr_pick_better_text(text, retryText)
+    ; }
 
     DllCall("DeleteObject", "Ptr", hbm)
 
@@ -143,7 +144,7 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
 _ocr_default_options(custom := 0) {
     options := IsObject(custom) ? custom : Map()
     if !options.Has("lang")
-        options["lang"] := "en-US"
+        options["lang"] := "fr-FR"
     if !options.Has("scale")
         options["scale"] := 1.6
     if !options.Has("grayscale")

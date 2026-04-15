@@ -356,6 +356,7 @@ FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.4) {
         return {Score: 0}
 
     currentSection := ""
+    
     loop read IniPath {
         row := Trim(A_LoopReadLine)
         if (row = "")
