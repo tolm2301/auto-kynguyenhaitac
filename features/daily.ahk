@@ -165,7 +165,7 @@ _daily_log(msg) {
 
     logPath := logDir . "\daily.log"
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-    FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+    _log_append(logPath, "[" . timestamp . "] " . msg . "`n", "UTF-8")
 }
 
 _feature_daily_single_hwnd(hwnd) {

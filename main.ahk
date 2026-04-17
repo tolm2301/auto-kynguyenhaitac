@@ -3,7 +3,7 @@
 _log_startup_error(msg) {
     logPath := A_ScriptDir . "\logs\startup_error.log"
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-    FileAppend("[" . timestamp . "] " . msg . "`n", logPath)
+    _log_append(logPath, "[" . timestamp . "] " . msg . "`n")
 }
 
 #Include gui\gui_main.ahk
@@ -11,6 +11,7 @@ _log_startup_error(msg) {
 #include utils\window.ahk
 #include utils\post_message.ahk
 #include utils\date.ahk
+#include utils\log_file.ahk
 #include utils\OCR.ahk
 #include utils\scheduler.ahk
 

@@ -234,8 +234,7 @@ _scheduler_log(msg) {
 
     if (lastLogDate = "") {
         if FileExist(logPath) {
-            firstLine := ""
-            try firstLine := FileRead(logPath, "UTF-8")
+            firstLine := _log_read_or_empty(logPath, "UTF-8")
             if (firstLine != "") {
                 if RegExMatch(firstLine, "\[(\d{4}-\d{2}-\d{2})", &m) {
                     if (m[1] != today)
@@ -250,5 +249,5 @@ _scheduler_log(msg) {
     }
 
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-    FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+    _log_append(logPath, "[" . timestamp . "] " . msg . "`n", "UTF-8")
 }

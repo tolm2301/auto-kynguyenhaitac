@@ -282,7 +282,7 @@ _hoidap_log(msg) {
 
     logPath := logDir . "\hoidap.log"
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-    FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+    _log_append(logPath, "[" . timestamp . "] " . msg . "`n", "UTF-8")
 }
 
 _hoidap_reset_log() {

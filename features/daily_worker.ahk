@@ -3,6 +3,7 @@
 
 #Include ..\utils\window_for_multiple_win.ahk
 #Include ..\utils\post_message.ahk
+#Include ..\utils\log_file.ahk
 #Include daily.ahk
 
 global g_featureText := {text: ""}

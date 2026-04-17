@@ -361,7 +361,7 @@ _httt_log(msg) {
 
     logPath := logDir . "\haitacthongthai.log"
     timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-    FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+    _log_append(logPath, "[" . timestamp . "] " . msg . "`n", "UTF-8")
 }
 
 _httt_reset_log() {
