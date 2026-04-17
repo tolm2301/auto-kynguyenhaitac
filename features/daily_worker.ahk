@@ -8,6 +8,12 @@
 
 global g_featureText := {text: ""}
 
+_feature_reset_running_status() {
+    global g_featureText
+    if (IsSet(g_featureText))
+        g_featureText.text := "Tính năng đang chạy: Chưa có"
+}
+
 if (A_Args.Length < 1)
     ExitApp(1)
 

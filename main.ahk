@@ -42,6 +42,13 @@ if (A_Args.Length >= 2 and A_Args[1] = "--daily-worker") {
     ExitApp()
 }
 
+if (A_Args.Length >= 3 and A_Args[1] = "--boss-worker") {
+    mode := A_Args[2]
+    hwnd := Integer(A_Args[3])
+    _boss_worker_entry(mode, hwnd)
+    ExitApp()
+}
+
 _gui_init()
 
 F3:: {

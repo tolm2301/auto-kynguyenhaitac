@@ -5,20 +5,24 @@ _feature_anhhon(count) {
     global isRunning
     isRunning := true
 
-    if !hwnd {
-        MsgBox "Không tìm thấy cửa sổ game"
-        return
-    }
-
-    Loop Integer(count) {
-        if !isRunning
+    try {
+        if !hwnd {
+            MsgBox "Không tìm thấy cửa sổ game"
             return
+        }
 
-        _click_post(hwnd, 739, 626)
-        Sleep 4000
-        _click_post(hwnd, 1170, 184)
-        Sleep 3000
-        _click_post(hwnd, 627, 634)
-        Sleep 3000
+        Loop Integer(count) {
+            if !isRunning
+                return
+
+            _click_post(hwnd, 739, 626)
+            Sleep 4000
+            _click_post(hwnd, 1170, 184)
+            Sleep 3000
+            _click_post(hwnd, 627, 634)
+            Sleep 3000
+        }
+    } finally {
+        _feature_reset_running_status()
     }
 }

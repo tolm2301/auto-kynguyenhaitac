@@ -120,6 +120,8 @@ _scheduler_execute_event(event) {
     } catch as err {
         _scheduler_mark_executed(event.runKey, "failed")
         _scheduler_log("Failed: " . event.name . " - " . err.Message)
+    } finally {
+        _feature_reset_running_status()
     }
 }
 

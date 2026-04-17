@@ -5,25 +5,29 @@ _feature_rakhoi(count) {
     global isRunning
     isRunning := true
 
-    if !hwnd {
-        MsgBox "Không tìm thấy cửa sổ game"
-        return
-    }
-
-    Loop Integer(count) {
-        if !isRunning
+    try {
+        if !hwnd {
+            MsgBox "Không tìm thấy cửa sổ game"
             return
+        }
 
-        _click_post(hwnd, 820, 231)
+        Loop Integer(count) {
+            if !isRunning
+                return
 
-        Sleep 200
+            _click_post(hwnd, 820, 231)
 
-        _click_post(hwnd, 820, 281)
+            Sleep 200
 
-        Sleep 200
+            _click_post(hwnd, 820, 281)
 
-        _click_post(hwnd, 413, 481)
+            Sleep 200
 
-        Sleep 200
+            _click_post(hwnd, 413, 481)
+
+            Sleep 200
+        }
+    } finally {
+        _feature_reset_running_status()
     }
 }

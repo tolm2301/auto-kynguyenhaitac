@@ -11,8 +11,12 @@ _feature_hoidapcothuong() {
     isRunning := true
     g_featureText.Text := "Tính năng đang chạy: Hỏi đáp có thưởng"
 
-    hwnd := hwnds[1]
-    _hoidap_auto_answer(hwnd)
+    try {
+        hwnd := hwnds[1]
+        _hoidap_auto_answer(hwnd)
+    } finally {
+        _feature_reset_running_status()
+    }
 }
 
 _hoidap_auto_answer(hwnd) {

@@ -7,18 +7,22 @@ _feature_nammoiphattai(count) {
     global isRunning
     isRunning := true
 
-    if !hwnd {
-        MsgBox "Không tìm thấy cửa sổ game"
-        return
-    }
-
-    Loop Integer(count) {
-        if !isRunning
+    try {
+        if !hwnd {
+            MsgBox "Không tìm thấy cửa sổ game"
             return
+        }
 
-        _click_post(hwnd, 716, 443)
-        Sleep 500
-        _post_key(hwnd, VK_ESC)
-        Sleep 1000
+        Loop Integer(count) {
+            if !isRunning
+                return
+
+            _click_post(hwnd, 716, 443)
+            Sleep 500
+            _post_key(hwnd, VK_ESC)
+            Sleep 1000
+        }
+    } finally {
+        _feature_reset_running_status()
     }
 }

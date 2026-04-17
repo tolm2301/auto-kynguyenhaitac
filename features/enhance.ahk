@@ -5,17 +5,21 @@ _feature_enhance(count) {
     global isRunning
     isRunning := true
 
-    if !hwnd {
-        MsgBox "Không tìm thấy cửa sổ game"
-        return
-    }
-
-    Loop Integer(count) {
-        if !isRunning
+    try {
+        if !hwnd {
+            MsgBox "Không tìm thấy cửa sổ game"
             return
+        }
 
-        _click_post(hwnd, 930, 530)
+        Loop Integer(count) {
+            if !isRunning
+                return
 
-        Sleep 300
+            _click_post(hwnd, 930, 530)
+
+            Sleep 300
+        }
+    } finally {
+        _feature_reset_running_status()
     }
 }

@@ -11,38 +11,42 @@ _feature_haitacthongthai() {
     isRunning := true
     g_featureText.Text := "Tính năng đang chạy: Hải tặc thông thái"
 
-    iniPath := A_ScriptDir . "\resources\Question.ini"
-    section := "Haitacthongthai"
+    try {
+        iniPath := A_ScriptDir . "\resources\Question.ini"
+        section := "Haitacthongthai"
 
-    hwnd := hwnds[1]
+        hwnd := hwnds[1]
 
 
-    questionText := _httt_read_question(hwnd)
-    questionText := _httt_clean_question_text(questionText)
-    if (Trim(questionText) = "") {
-        _httt_log("OCR câu hỏi rỗng")
-        return
-    }
-
-    bestMatch := _httt_find_fuzzy_match(iniPath, section, questionText, 0.4)
-    if (bestMatch.Score <= 0) {
-        _httt_log("Không match câu hỏi | OCR Q: " . questionText)
-        return
-    }
-
-    for hwndElement in hwnds {
-        if !isRunning
+        questionText := _httt_read_question(hwnd)
+        questionText := _httt_clean_question_text(questionText)
+        if (Trim(questionText) = "") {
+            _httt_log("OCR câu hỏi rỗng")
             return
-
-        optionMap := _httt_read_option_map(hwndElement)
-        result := _httt_pick_answer(bestMatch.Answer, optionMap)
-        if (result.letter = "") {
-            _httt_log("Không xác định đáp án | Q: " . bestMatch.Question)
-            continue
         }
 
-        if _httt_click_answer(hwndElement, result.letter)
-            _httt_log("Đã trả lời " . result.letter . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
+        bestMatch := _httt_find_fuzzy_match(iniPath, section, questionText, 0.4)
+        if (bestMatch.Score <= 0) {
+            _httt_log("Không match câu hỏi | OCR Q: " . questionText)
+            return
+        }
+
+        for hwndElement in hwnds {
+            if !isRunning
+                return
+
+            optionMap := _httt_read_option_map(hwndElement)
+            result := _httt_pick_answer(bestMatch.Answer, optionMap)
+            if (result.letter = "") {
+                _httt_log("Không xác định đáp án | Q: " . bestMatch.Question)
+                continue
+            }
+
+            if _httt_click_answer(hwndElement, result.letter)
+                _httt_log("Đã trả lời " . result.letter . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
+        }
+    } finally {
+        _feature_reset_running_status()
     }
 }
 

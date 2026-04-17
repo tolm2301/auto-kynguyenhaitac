@@ -8,22 +8,26 @@ _feature_daily() {
     hwnds := _win_get_list()
     isRunning := true
 
-    g_dailyWorkerPids := []
-    g_dailyStopFile := _daily_build_stop_file()
+    try {
+        g_dailyWorkerPids := []
+        g_dailyStopFile := _daily_build_stop_file()
 
-    for hwnd in hwnds {
-        pid := _daily_start_worker(hwnd, g_dailyStopFile)
-        if (pid > 0)
-            g_dailyWorkerPids.Push(pid)
+        for hwnd in hwnds {
+            pid := _daily_start_worker(hwnd, g_dailyStopFile)
+            if (pid > 0)
+                g_dailyWorkerPids.Push(pid)
+        }
+
+        _daily_wait_workers(g_dailyWorkerPids, g_dailyStopFile)
+
+        if FileExist(g_dailyStopFile)
+            try FileDelete(g_dailyStopFile)
+
+        g_dailyStopFile := ""
+        g_dailyWorkerPids := []
+    } finally {
+        _feature_reset_running_status()
     }
-
-    _daily_wait_workers(g_dailyWorkerPids, g_dailyStopFile)
-
-    if FileExist(g_dailyStopFile)
-        try FileDelete(g_dailyStopFile)
-
-    g_dailyStopFile := ""
-    g_dailyWorkerPids := []
 }
 
 _feature_daily_worker_entry(hwnd, stopFile := "") {
