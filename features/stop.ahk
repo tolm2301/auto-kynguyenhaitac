@@ -42,7 +42,7 @@ _feature_tam_bao_chien() {
         if !isRunning
             return
 
-        if (Integer(getHour()) = Integer(14)) {
+        if (Integer(getHour()) = Integer(15)) {
             g_featureText.text := "Tính năng đang chạy: Chưa có"
             return
         }

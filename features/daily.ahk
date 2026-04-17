@@ -40,6 +40,7 @@ _daily_init_runtime() {
     global FEATURE_TASK_SLEEP := 5000
     global FEATURE_TASK_LONG_SLEEP := 15000
     global LOAD_SLEEP := 2000
+    global SHORT_LOAD_SLEEP := 1000
     global EXIT_FEATURE_SLEEP := 7000
 }
 
@@ -104,19 +105,6 @@ _feature_daily_single_hwnd(hwnd) {
     if !_daily_should_continue()
         return
     _tam_bao(hwnd)
-
-    if !_daily_should_continue()
-        return
-    _cong_hien(hwnd)
-    if !_daily_should_continue()
-        return
-    _linh_the_bai(hwnd)
-    if !_daily_should_continue()
-        return
-    _cuong_hoa_tau_chien(hwnd)
-    if !_daily_should_continue()
-        return
-    _mua_chien_tich(hwnd)
     if !_daily_should_continue()
         return
     _boi_duong_tinh_linh(hwnd)
@@ -126,9 +114,21 @@ _feature_daily_single_hwnd(hwnd) {
     if !_daily_should_continue()
         return
     _dat_hang(hwnd)
-    if !_daily_should_continue()
-        return
-    _nhon_hop_qua(hwnd)
+    ; if !_daily_should_continue()
+    ;     return
+    ; _linh_the_bai(hwnd)
+    ; if !_daily_should_continue()
+    ;     return
+    ; _cuong_hoa_tau_chien(hwnd)
+    ; if !_daily_should_continue()
+    ;     return
+    ; _cong_hien(hwnd)
+    ; if !_daily_should_continue()
+    ;     return
+    ; _mua_chien_tich(hwnd)
+    ; if !_daily_should_continue()
+    ;     return
+    ; _nhon_hop_qua(hwnd)
 }
 
 _daily_should_continue() {
@@ -361,11 +361,10 @@ _dat_hang(hwnd) {
 }
 
 _boi_duong_tinh_linh(hwnd) {
-    _click_post(hwnd, 61, 365)
+    _click_post(hwnd, 692, 599)
     Sleep FEATURE_TASK_SLEEP
-    _scroll_task(hwnd)
-    _click_post(hwnd, 872, 486)
-    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 483, 610)
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1037, 422)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ENTER")
@@ -375,10 +374,9 @@ _boi_duong_tinh_linh(hwnd) {
 }
 
 _nhan_thuong_linh_danh_thue(hwnd) {
-    _click_post(hwnd, 61, 365)
+    _click_post(hwnd, 926, 41)
     Sleep FEATURE_TASK_SLEEP
-    _scroll_task(hwnd)
-    _click_post(hwnd, 872, 486)
+    _click_post(hwnd, 1045, 193)
     Sleep FEATURE_TASK_LONG_SLEEP
     _click_post(hwnd, 869, 33)
     Sleep LOAD_SLEEP
@@ -387,6 +385,8 @@ _nhan_thuong_linh_danh_thue(hwnd) {
     _click_post(hwnd, 746, 285)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ENTER")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
@@ -495,9 +495,9 @@ _nau_an(hwnd) {
     _click_post(hwnd, 33, 225)
     Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 518, 148)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     x1 := 365
     x2 := 599
     x3 := 827
@@ -534,219 +534,209 @@ _support_nau_an(hwnd, x, y) {
 
 _ra_khoi(hwnd) {
     _click_post(hwnd, 45, 270)
-    Sleep 3000
+    Sleep FEATURE_TASK_SLEEP
     Loop Integer(15) {
         _click_post(hwnd, 804, 210)
-        sleep 500
+        sleep LOAD_SLEEP
     }
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 7000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _che_do(hwnd) {
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 551, 125)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     loop Integer(7) {
         _click_post(hwnd, 279, 405)
-        Sleep 1000
+        Sleep LOAD_SLEEP
         _post_with_vk_string(hwnd, "Enter")
-        Sleep 500
+        Sleep LOAD_SLEEP
     }
-    Sleep 500
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1089, 334)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1143, 414)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1208, 38)
-    Sleep 7000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _anh_hon(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 690, 125)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     ;
     _click_post(hwnd, 511, 623)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 711, 387)
-    Sleep 1000
+    Sleep LOAD_SLEEP    
     _click_post(hwnd, 623, 440)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "Enter")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _all_blue(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 765, 125)
-    Sleep 15000
-    ;
-    ; bat ca
-    ; _click_post(hwnd, 901, 43)
-    ; Sleep 1000
-    ; _click_post(hwnd, 745, 369)
-    ; Sleep 1000
-    ; _multi_click_post(hwnd, 763, 513, 10)
-    ; Sleep 1000
-    ; _post_with_vk_string(hwnd, "ESC")
-    ; Sleep 1000
-    ; _post_with_vk_string(hwnd, "ESC")
-    ; Sleep 1000
+    Sleep FEATURE_TASK_LONG_SLEEP
     ; thu thap
     _support_all_blue(hwnd, 319, 201)
     _support_all_blue(hwnd, 738, 243)
     _support_all_blue(hwnd, 277, 446)
     _support_all_blue(hwnd, 614, 512)
     _support_all_blue(hwnd, 897, 505)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 
 }
 
 _imple_down(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 832, 125)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     _multi_click_post(hwnd, 557, 624, 4)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _dung_luyen(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 972, 125)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     ;
     _click_post(hwnd, 548, 548)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "Enter")
-    Sleep 2000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1189, 46)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _vung_bien_than_bi(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 625, 181)
-    Sleep 15000
-    ;
-    ; _click_post(hwnd, 449, 587)
-    ; Sleep 1000
+    Sleep FEATURE_TASK_LONG_SLEEP
     Loop Integer(10) {
         _support_vung_bien_than_bi(hwnd)
     }
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _haki(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 697, 181)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     ;
     _click_post(hwnd, 574, 615)
-    Sleep 2000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "Esc")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _nguyen_to(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 925, 35)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 835, 181)
-    Sleep 15000
+    Sleep FEATURE_TASK_LONG_SLEEP
     ;
     ; mua nguyen to
     _click_post(hwnd, 936, 43)
-    Sleep 5000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 688, 252)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 470, 354)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 549, 470)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _multi_click_post(hwnd, 626, 575, 7)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1222, 41)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 _tap_kick(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 732, 36)
-    Sleep 3000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 405, 321)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 886, 554)
-    Sleep 3000
+    Sleep LOAD_SLEEP
     ;
     _click_post(hwnd, 364, 201)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 699, 546)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 ; tangqua
 _tang_qua(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 576, 612)
-    Sleep 3000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 416, 136)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 569, 461)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 560, 445)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
 ; bao thach
 _bao_thach(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 858, 615)
-    Sleep 15000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 679, 389)
-    Sleep 15000
-    _click_post(hwnd, 422, 551)
-    Sleep 1000
+    Sleep FEATURE_TASK_LONG_SLEEP
+    ;; tim bao thach
+    _click_post(hwnd, 415, 59)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 710, 408, 3)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
     ;; Me tran
     _click_post(hwnd, 864, 38)
-    Sleep 1000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 828, 224)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     Loop Integer(5) {
         _click_post(hwnd, 569, 368)
         Sleep 4000
@@ -754,45 +744,39 @@ _bao_thach(hwnd) {
         Sleep 4000
     }
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 1235, 29)
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 
 }
 
-; tinh ban
 _tinh_ban(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 957, 615)
-    Sleep 2000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 336, 559)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
 
-; linh treo thuong
 _treo_thuong(hwnd) {
     ; go to tinh nag
     _click_post(hwnd, 1179, 615)
-    Sleep 2000
+    Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 855, 533)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
-    Sleep 2000
+    Sleep EXIT_FEATURE_SLEEP
 }
-; ra khoi
-; nau an
-; dau truong
-
 
 _support_all_blue(hwnd, x, y) {
-    Sleep 1000
+    Sleep LOAD_SLEEP
     _click_post(hwnd, x, y)
-    Sleep 1000
+    Sleep LOAD_SLEEP
     Loop Integer(10) {
         _click_post(hwnd, x, y)
-        Sleep 500
+        Sleep SHORT_LOAD_SLEEP
         _post_with_vk_string(hwnd, "Esc")
     }
 }
@@ -800,17 +784,17 @@ _support_all_blue(hwnd, x, y) {
 _support_vung_bien_than_bi(hwnd) {
     _click_post(hwnd, 563, 583)
     _support_tra_loi_vbtb(hwnd)
-    Sleep 500
+    Sleep SHORT_LOAD_SLEEP
 }
 
 _support_tra_loi_vbtb(hwnd) {
-    Sleep 200
+    Sleep SHORT_LOAD_SLEEP
     _click_post(hwnd, 524, 332)
-    Sleep 100
+    Sleep SHORT_LOAD_SLEEP
     _click_post(hwnd, 860, 647)
-    Sleep 100
+    Sleep SHORT_LOAD_SLEEP
     _click_post(hwnd, 508, 345)
-    Sleep 100
+    Sleep SHORT_LOAD_SLEEP
     _click_post(hwnd, 543, 229)
-    Sleep 100
+    Sleep SHORT_LOAD_SLEEP
 }
