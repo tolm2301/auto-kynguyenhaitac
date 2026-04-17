@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
+#NoTrayIcon
 
 #Include ..\utils\window_for_multiple_win.ahk
 #Include ..\utils\post_message.ahk

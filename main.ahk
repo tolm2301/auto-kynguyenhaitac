@@ -1,4 +1,6 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Off
+#NoTrayIcon
 
 _log_startup_error(msg) {
     logPath := A_ScriptDir . "\logs\startup_error.log"

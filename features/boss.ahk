@@ -55,7 +55,11 @@ _boss_start_worker(mode, hwnd) {
         return pid
     }
 
-    runCommand := Format('"{1}" "{2}" --boss-worker "{3}" "{4}"', A_AhkPath, A_ScriptFullPath, mode, hwnd)
+    workerScript := A_ScriptDir . "\features\boss_worker.ahk"
+    if !FileExist(workerScript)
+        return 0
+
+    runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_AhkPath, workerScript, mode, hwnd)
     try Run(runCommand, A_ScriptDir, "Hide", &pid)
     return pid
 }
