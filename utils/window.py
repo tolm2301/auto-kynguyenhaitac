@@ -42,24 +42,62 @@ def get_game_window_1() -> Optional[int]:
     return get_game_window(GAME_TITLE_1)
 
 
-def get_game_windows() -> List[int]:
-    """Get list of all game window handles."""
+BROWSER_PROCESSES = {
+    "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe",
+    "opera.exe", "opera_gx.exe", "iexplore.exe",
+}
+
+
+def _is_browser_process(process_name: str) -> bool:
+    """Check if process is a browser (to exclude browser-based game windows)."""
+    return process_name.lower() in BROWSER_PROCESSES
+
+
+def get_game_windows(include_hidden: bool = True) -> List[int]:
+    """Get list of all game window handles.
+
+    Args:
+        include_hidden: If True, also find hidden windows (matching AHK DetectHiddenWindows).
+    """
+    import win32process
+
     hwnds = []
-    
+
     def enum_callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if GAME_TITLE in title or GAME_TITLE_1 in title:
-                hwnds.append(hwnd)
+        # Include hidden windows if requested
+        if not include_hidden and not win32gui.IsWindowVisible(hwnd):
+            return True
+
+        title = win32gui.GetWindowText(hwnd)
+        if GAME_TITLE not in title and GAME_TITLE_1 not in title:
+            return True
+
+        # Exclude browser processes
+        try:
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            import ctypes
+            buf = ctypes.create_unicode_buffer(260)
+            ctypes.windll.kernel32.OpenProcess(0x0400, False, pid)
+            handle = ctypes.windll.kernel32.OpenProcess(0x0410, False, pid)
+            if handle:
+                ctypes.windll.psapi.GetModuleBaseNameW(handle, 0, buf, 260)
+                ctypes.windll.kernel32.CloseHandle(handle)
+                process_name = buf.value
+                if _is_browser_process(process_name):
+                    return True
+        except Exception:
+            pass
+
+        hwnds.append(hwnd)
         return True
-    
+
     win32gui.EnumWindows(enum_callback, None)
-    
+
     if not hwnds:
         logger.warning('Không tìm thấy cửa sổ game nào')
     else:
         logger.info(f'Tìm thấy {len(hwnds)} cửa sổ game: {hwnds}')
-    
+
     return hwnds
 
 

@@ -6,6 +6,7 @@ import logging
 
 from utils import get_logger, setup_logger, resize_all_games
 from utils.state import stop as state_stop, get_is_running, set_running
+from utils.scheduler import start_scheduler, stop_scheduler, get_next_event_text
 
 
 class TextHandler(logging.Handler):
@@ -56,7 +57,7 @@ class MainWindow:
         
         self.root = tk.Tk()
         self.root.title('Auto VHT')
-        self.root.geometry('400x700')
+        self.root.geometry('420x750')
         self.root.resizable(True, True)
         self.root.minsize(400, 500)
         self.root.configure(bg='#f0f0f0')
@@ -69,10 +70,15 @@ class MainWindow:
         self.root.protocol('WM_DELETE_WINDOW', self.on_close)
         
         self.feature_thread = None
+        self._scheduler_running = False
         self._create_widgets()
         self._update_status('Chưa có tính năng nào đang chạy')
         
         self.log_viewer.setup(self.logger)
+        
+        # Start event timer for next event display
+        self._update_next_event()
+        self.root.after(60000, self._update_next_event)
         
         self.logger.info('GUI initialized successfully')
     
@@ -84,6 +90,8 @@ class MainWindow:
         style.configure('Status.TLabel', font=('Arial', 10), foreground='#006400')
         style.configure('Feature.TButton', padding=8)
         style.configure('Action.TButton', padding=5)
+        style.configure('Scheduler.TButton', padding=5, foreground='#006400')
+        style.configure('SchedulerOff.TButton', padding=5, foreground='#cc0000')
         
         main_frame = ttk.Frame(self.root, padding='15')
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -105,6 +113,10 @@ class MainWindow:
         self.status_label = ttk.Label(status_frame, text='Chưa có', style='Status.TLabel')
         self.status_label.pack()
         
+        # Next event display
+        self.next_event_label = ttk.Label(status_frame, text='', font=('Arial', 9), foreground='#2e5090')
+        self.next_event_label.pack()
+        
         input_frame = ttk.Frame(main_frame)
         input_frame.pack(fill=tk.X, pady=(0, 15))
         
@@ -125,35 +137,41 @@ class MainWindow:
         btn_change = ttk.Button(btn_control, text='✏️ Đổi tên', command=self._on_change_name, style='Action.TButton')
         btn_change.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
+        # Scheduler toggle button
+        self.scheduler_btn = ttk.Button(
+            main_frame, text='⏰ Bật Lịch Tự Động',
+            command=self._toggle_scheduler,
+            style='SchedulerOff.TButton'
+        )
+        self.scheduler_btn.pack(fill=tk.X, pady=(0, 15))
+        
         nb = ttk.Notebook(main_frame)
         nb.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        features_tab = ttk.Frame(nb, padding='5')
-        nb.add(features_tab, text='📋 Tính năng')
+        # ===== Main Tab =====
+        main_tab = ttk.Frame(nb, padding='5')
+        nb.add(main_tab, text='📋 Main')
         
-        canvas_features = tk.Canvas(features_tab, bg='#f0f0f0', highlightthickness=0)
-        scrollbar_features = ttk.Scrollbar(features_tab, orient='vertical', command=canvas_features.yview)
-        features_inner = ttk.Frame(canvas_features)
-        features_inner.bind('<Configure>', lambda e: canvas_features.configure(scrollregion=canvas_features.bbox('all')))
-        canvas_features.create_window((0, 0), window=features_inner, anchor='nw')
-        canvas_features.configure(yscrollcommand=scrollbar_features.set)
-        canvas_features.pack(side='left', fill='both', expand=True)
-        scrollbar_features.pack(side='right', fill='y')
+        canvas_main = tk.Canvas(main_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_main = ttk.Scrollbar(main_tab, orient='vertical', command=canvas_main.yview)
+        main_inner = ttk.Frame(canvas_main)
+        main_inner.bind('<Configure>', lambda e: canvas_main.configure(scrollregion=canvas_main.bbox('all')))
+        canvas_main.create_window((0, 0), window=main_inner, anchor='nw')
+        canvas_main.configure(yscrollcommand=scrollbar_main.set)
+        canvas_main.pack(side='left', fill='both', expand=True)
+        scrollbar_main.pack(side='right', fill='y')
         
-        features = [
-            ('⚡ Cường Hoá', self._on_enhance),
-            ('⛵ Ra Khơi', self._on_rakhoi),
-            ('🎊 Năm Mới Phát Tài', self._on_nammoiphattai),
+        main_features = [
             ('📅 Daily', self._on_daily),
-            ('👻 Ảnh Hồn', self._on_anhhon),
-            ('⚔️ Tấn Công Hải Quân', self._on_tanconghaiquan),
-            ('❓ Hỏi Đáp Có Thưởng', self._on_hoidapcothuong),
+            ('⚔️ Tầm Bảo Chiến', self._on_tam_bao_chien),
+            ('🧠 Hải Tặc Thông Thái', self._on_haitacthongthai),
         ]
         
-        for i, (text, cmd) in enumerate(features):
-            btn = ttk.Button(features_inner, text=text, command=cmd, style='Feature.TButton')
+        for text, cmd in main_features:
+            btn = ttk.Button(main_inner, text=text, command=cmd, style='Feature.TButton')
             btn.pack(fill=tk.X, pady=3, padx=5)
         
+        # ===== Boss Tab =====
         boss_tab = ttk.Frame(nb, padding='5')
         nb.add(boss_tab, text='🐉 Boss')
         
@@ -166,15 +184,55 @@ class MainWindow:
         canvas_boss.pack(side='left', fill='both', expand=True)
         scrollbar_boss.pack(side='right', fill='y')
         
+        ttk.Label(boss_inner, text='Boss chạy tự động theo lịch (scheduler)',
+                  font=('Arial', 9), foreground='#666').pack(pady=(0, 10))
+        
         boss_features = [
             ('🐎 Rồng Punk (15:30)', self._on_punk),
             ('🦑 Kraken (21:00)', self._on_kraken),
+            ('🐲 Kaido (21:30)', self._on_kaido),
         ]
         
         for text, cmd in boss_features:
             btn = ttk.Button(boss_inner, text=text, command=cmd, style='Feature.TButton')
             btn.pack(fill=tk.X, pady=3, padx=5)
         
+        # ===== Support Tab =====
+        support_tab = ttk.Frame(nb, padding='5')
+        nb.add(support_tab, text='🔧 Phụ trợ')
+        
+        canvas_support = tk.Canvas(support_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar_support = ttk.Scrollbar(support_tab, orient='vertical', command=canvas_support.yview)
+        support_inner = ttk.Frame(canvas_support)
+        support_inner.bind('<Configure>', lambda e: canvas_support.configure(scrollregion=canvas_support.bbox('all')))
+        canvas_support.create_window((0, 0), window=support_inner, anchor='nw')
+        canvas_support.configure(yscrollcommand=scrollbar_support.set)
+        canvas_support.pack(side='left', fill='both', expand=True)
+        scrollbar_support.pack(side='right', fill='y')
+        
+        support_features = [
+            ('⚡ Cường Hoá', self._on_enhance),
+            ('⛵ Ra Khơi', self._on_rakhoi),
+            ('🎊 Năm Mới Phát Tài', self._on_nammoiphattai),
+            ('👻 Ảnh Hồn', self._on_anhhon),
+            ('⚔️ Tấn Công Hải Quân', self._on_tanconghaiquan),
+            ('❓ Hỏi Đáp Có Thưởng', self._on_hoidapcothuong),
+        ]
+        
+        for text, cmd in support_features:
+            btn = ttk.Button(support_inner, text=text, command=cmd, style='Feature.TButton')
+            btn.pack(fill=tk.X, pady=3, padx=5)
+        
+        ttk.Separator(support_inner, orient='horizontal').pack(fill=tk.X, pady=10)
+        
+        # Gift code section
+        gift_frame = ttk.LabelFrame(support_inner, text='Gift Code', padding='5')
+        gift_frame.pack(fill=tk.X, pady=5, padx=5)
+        
+        ttk.Button(gift_frame, text='🎁 Nhập Gift Code', command=self._on_giftcode_dialog,
+                   style='Feature.TButton').pack(fill=tk.X, pady=3)
+        
+        # ===== Tools Tab =====
         tools_tab = ttk.Frame(nb, padding='5')
         nb.add(tools_tab, text='🔧 Công cụ')
         
@@ -189,7 +247,9 @@ class MainWindow:
         
         ttk.Button(tools_inner, text='🧪 Test', command=self._on_test, style='Feature.TButton').pack(fill=tk.X, pady=3, padx=5)
         ttk.Button(tools_inner, text='📅 Lịch Sự Kiện', command=self._on_lich_su_kien, style='Feature.TButton').pack(fill=tk.X, pady=3, padx=5)
+        ttk.Button(tools_inner, text='📝 Register Uta World', command=self._on_register_uta, style='Feature.TButton').pack(fill=tk.X, pady=3, padx=5)
         
+        # ===== Quest Tab =====
         quest_tab = ttk.Frame(nb, padding='5')
         nb.add(quest_tab, text='📜 Quest')
         
@@ -250,6 +310,29 @@ class MainWindow:
     def _update_status(self, text: str):
         """Update status label."""
         self.status_label.config(text=text)
+    
+    def _update_next_event(self):
+        """Update next event display."""
+        text = get_next_event_text()
+        self.next_event_label.config(text=text)
+        if self.root.winfo_exists():
+            self.root.after(60000, self._update_next_event)
+    
+    def _toggle_scheduler(self):
+        """Toggle the activity scheduler on/off."""
+        if self._scheduler_running:
+            stop_scheduler()
+            self._scheduler_running = False
+            self.scheduler_btn.config(text='⏰ Bật Lịch Tự Động', style='SchedulerOff.TButton')
+            self.logger.info('Scheduler stopped')
+        else:
+            start_scheduler(
+                status_callback=self._update_status,
+                count=self._get_count()
+            )
+            self._scheduler_running = True
+            self.scheduler_btn.config(text='⏰ Tắt Lịch Tự Động', style='Scheduler.TButton')
+            self.logger.info('Scheduler started')
     
     def _on_stop(self):
         """Stop button clicked."""
@@ -319,6 +402,11 @@ class MainWindow:
         self.logger.info('Kraken clicked')
         self._run_feature(feature_kraken, status_callback=self._update_status)
     
+    def _on_kaido(self):
+        from features import feature_kaido
+        self.logger.info('Kaido clicked')
+        self._run_feature(feature_kaido, status_callback=self._update_status)
+    
     def _on_quest(self):
         from features import feature_quest
         self.logger.info('Quest clicked')
@@ -329,14 +417,64 @@ class MainWindow:
         self.logger.info('Lich su kien clicked')
         feature_lich_su_kien()
     
+    def _on_haitacthongthai(self):
+        from features import feature_haitacthongthai
+        self.logger.info('Hai tac thong thai clicked')
+        self._run_feature(feature_haitacthongthai, status_callback=self._update_status)
+    
+    def _on_tam_bao_chien(self):
+        from features import feature_tam_bao_chien
+        self.logger.info('Tam bao chien clicked')
+        self._run_feature(feature_tam_bao_chien, status_callback=self._update_status)
+    
+    def _on_register_uta(self):
+        from features import feature_register_uta
+        self.logger.info('Register Uta World clicked')
+        self._run_feature(feature_register_uta, status_callback=self._update_status)
+    
+    def _on_giftcode_dialog(self):
+        """Open gift code input dialog."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title('Nhập Gift Code')
+        dialog.geometry('400x300')
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text='Nhập gift code (mỗi dòng 1 code):', font=('Arial', 10)).pack(pady=10)
+        
+        text_frame = ttk.Frame(dialog)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        code_text = tk.Text(text_frame, height=8, width=40, font=('Consolas', 9))
+        code_text.pack(fill=tk.BOTH, expand=True)
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        def submit_codes():
+            codes = code_text.get('1.0', tk.END).strip()
+            if not codes:
+                messagebox.showwarning('Cảnh báo', 'Vui lòng nhập gift code!')
+                return
+            dialog.destroy()
+            from features import feature_giftcode
+            self._run_feature(feature_giftcode, codes, status_callback=self._update_status)
+        
+        ttk.Button(btn_frame, text='✅ Gửi', command=submit_codes).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        ttk.Button(btn_frame, text='❌ Huỷ', command=dialog.destroy).pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+    
     def on_close(self):
         """Window close event."""
         if get_is_running():
             if messagebox.askyesno('Xác nhận', 'Có tính năng đang chạy. Bạn có chắc muốn thoát?'):
                 state_stop()
+                if self._scheduler_running:
+                    stop_scheduler()
                 self.logger.info('Application closing')
                 self.root.quit()
         else:
+            if self._scheduler_running:
+                stop_scheduler()
             self.logger.info('Application closing')
             self.root.quit()
     

@@ -162,3 +162,22 @@ def send_keys(hwnd: int, keys: list, delays: list = None) -> bool:
         if delays and i < len(delays):
             time.sleep(delays[i])
     return True
+
+
+WM_CHAR = 0x0102
+
+
+def send_text(hwnd: int, text: str, delay: float = 0.005) -> bool:
+    """Send a string of characters to a window via WM_CHAR messages.
+
+    This is useful for typing text into input fields.
+    """
+    try:
+        for ch in text:
+            char_code = ord(ch)
+            ctypes.windll.user32.PostMessageW(hwnd, WM_CHAR, char_code, 1)
+            time.sleep(delay)
+        return True
+    except Exception as e:
+        logger.error(f'Lỗi send_text: {e}')
+        return False

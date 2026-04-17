@@ -138,11 +138,45 @@ class OCRReader:
         
         return self._reader.readtext(image, detail=detail)
     
+    def read_region(self, hwnd: int, x1: int, y1: int, x2: int, y2: int) -> str:
+        """
+        Read text from a region of a specific window.
+
+        Args:
+            hwnd: Window handle
+            x1, y1: Top-left corner (relative to window)
+            x2, y2: Bottom-right corner (relative to window)
+
+        Returns:
+            Recognized text string
+        """
+        try:
+            import win32gui
+            left, top, _, _ = win32gui.GetWindowRect(hwnd)
+            abs_x1 = left + x1
+            abs_y1 = top + y1
+            abs_x2 = left + x2
+            abs_y2 = top + y2
+
+            from PIL import ImageGrab
+            img = ImageGrab.grab(bbox=(abs_x1, abs_y1, abs_x2, abs_y2))
+            results = self.read_text(img)
+
+            if not results:
+                return ''
+
+            full_text = ' '.join([item[1] if isinstance(item, tuple) else str(item)
+                                  for item in results])
+            return full_text
+        except Exception as e:
+            logger.error(f'Lỗi OCR read_region: {e}')
+            return ''
+
     def read_text_from_region(
-        self, 
-        x: int, 
-        y: int, 
-        width: int, 
+        self,
+        x: int,
+        y: int,
+        width: int,
         height: int,
         screenshot_func=None
     ) -> str:
