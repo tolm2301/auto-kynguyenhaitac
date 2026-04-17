@@ -62,11 +62,16 @@ _gui_init() {
     btnChangeName.OnEvent("Click", (*) => _feature_change_win())
     btnResize.OnEvent("Click", (*) => _win_resize_list())
 
-    myGui.OnEvent("Close", (*) => ExitApp())
+    myGui.OnEvent("Close", _app_shutdown)
 
     myGui.Show()
     _start_event_timer()
     _start_activity_scheduler()
+}
+
+_app_shutdown(*) {
+    try _feature_stop()
+    ExitApp()
 }
 
 _get_next_event_text() {

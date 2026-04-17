@@ -28,6 +28,19 @@ _log_startup_error(msg) {
 #include features\giftcode.ahk
 #include features\register_event.ahk
 
+OnExit(_app_on_exit)
+
+_app_on_exit(*) {
+    try _feature_stop()
+}
+
+if (A_Args.Length >= 2 and A_Args[1] = "--daily-worker") {
+    hwnd := Integer(A_Args[2])
+    stopFile := (A_Args.Length >= 3) ? A_Args[3] : ""
+    _feature_daily_worker_entry(hwnd, stopFile)
+    ExitApp()
+}
+
 _gui_init()
 
 F3:: {

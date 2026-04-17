@@ -1,7 +1,9 @@
 _feature_stop() {
     global g_dailyStopFile, g_dailyWorkerPids
 
-    g_featureText.text := "Tính năng đang chạy: Chưa có"
+    if (IsSet(g_featureText))
+        g_featureText.text := "Tính năng đang chạy: Chưa có"
+
     global isRunning
     isRunning := false
 

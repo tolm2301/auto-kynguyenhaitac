@@ -44,91 +44,163 @@ _daily_init_runtime() {
     global EXIT_FEATURE_SLEEP := 7000
 }
 
+_daily_get_task_list() {
+    tasks := []
+    tasks.Push(["che_do", _che_do])
+    tasks.Push(["anh_hon", _anh_hon])
+    tasks.Push(["all_blue", _all_blue])
+    tasks.Push(["imple_down", _imple_down])
+    tasks.Push(["dung_luyen", _dung_luyen])
+    tasks.Push(["vung_bien_than_bi", _vung_bien_than_bi])
+    tasks.Push(["haki", _haki])
+    tasks.Push(["nguyen_to", _nguyen_to])
+    tasks.Push(["tap_kick", _tap_kick])
+    tasks.Push(["tang_qua", _tang_qua])
+    tasks.Push(["bao_thach", _bao_thach])
+    tasks.Push(["tinh_ban", _tinh_ban])
+    tasks.Push(["ra_khoi", _ra_khoi])
+    tasks.Push(["linh_treo_thuong", _linh_treo_thuong])
+    tasks.Push(["dau_truong", _dau_truong])
+    tasks.Push(["huan_luyen", _huan_luyen])
+    tasks.Push(["nau_an", _nau_an])
+    tasks.Push(["tam_bao", _tam_bao])
+    tasks.Push(["boi_duong_tinh_linh", _boi_duong_tinh_linh])
+    tasks.Push(["nhan_thuong_linh_danh_thue", _nhan_thuong_linh_danh_thue])
+    tasks.Push(["dat_hang", _dat_hang])
+    tasks.Push(["linh_the_bai", _linh_the_bai])
+    tasks.Push(["cuong_hoa_tau_chien", _cuong_hoa_tau_chien])
+    tasks.Push(["nhan_hop_qua", _nhon_hop_qua])
+    return tasks
+}
+
+_daily_get_base_dir() {
+    if DirExist(A_ScriptDir . "\resources")
+        return A_ScriptDir
+
+    if DirExist(A_ScriptDir . "\..\resources")
+        return A_ScriptDir . "\.."
+
+    return A_WorkingDir
+}
+
+_daily_get_state_path() {
+    return _daily_get_base_dir() . "\resources\dailystate.ini"
+}
+
+_daily_get_state_section() {
+    return "Daily"
+}
+
+_daily_get_today_key() {
+    return FormatTime(A_Now, "yyyyMMdd")
+}
+
+_daily_load_progress(tasks, totalTasks) {
+    statePath := _daily_get_state_path()
+    section := _daily_get_state_section()
+    defaultState := [1, 0, ""]
+
+    if !FileExist(statePath)
+        return defaultState
+
+    try {
+        savedIndexRaw := IniRead(statePath, section, "lastCompletedTaskIndex", "0")
+        savedTaskId := IniRead(statePath, section, "lastCompletedTaskId", "")
+        savedIndex := Integer(savedIndexRaw)
+
+        if (savedIndex < 0 or savedIndex > totalTasks)
+            return defaultState
+
+        completedIndex := savedIndex
+
+        if (savedTaskId != "") {
+            Loop totalTasks {
+                if (tasks[A_Index][1] = savedTaskId) {
+                    completedIndex := A_Index
+                    break
+                }
+            }
+        }
+
+        startIndex := completedIndex + 1
+        if (startIndex > totalTasks)
+            return defaultState
+
+        return [startIndex, completedIndex, savedTaskId]
+    } catch {
+        return defaultState
+    }
+}
+
+_daily_save_progress(taskIndex, taskId) {
+    statePath := _daily_get_state_path()
+    section := _daily_get_state_section()
+    SplitPath(statePath, , &stateDir)
+
+    try {
+        if (stateDir != "" and !DirExist(stateDir))
+            DirCreate(stateDir)
+
+        IniWrite(taskIndex, statePath, section, "lastCompletedTaskIndex")
+        IniWrite(taskId, statePath, section, "lastCompletedTaskId")
+        IniWrite(A_Now, statePath, section, "updatedAt")
+    } catch {
+    }
+}
+
+_daily_reset_progress() {
+    statePath := _daily_get_state_path()
+    section := _daily_get_state_section()
+
+    if !FileExist(statePath)
+        return
+
+    try IniDelete(statePath, section)
+}
+
+_daily_log(msg) {
+    logDir := _daily_get_base_dir() . "\logs"
+    if !DirExist(logDir)
+        DirCreate(logDir)
+
+    logPath := logDir . "\daily.log"
+    timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
+    FileAppend("[" . timestamp . "] " . msg . "`n", logPath, "UTF-8")
+}
+
 _feature_daily_single_hwnd(hwnd) {
-    ; === TINH NANG ===
-    if !_daily_should_continue()
-        return
-    _che_do(hwnd)
-    if !_daily_should_continue()
-        return
-    _anh_hon(hwnd)
-    if !_daily_should_continue()
-        return
-    _all_blue(hwnd)
-    if !_daily_should_continue()
-        return
-    _imple_down(hwnd)
-    if !_daily_should_continue()
-        return
-    _dung_luyen(hwnd)
-    if !_daily_should_continue()
-        return
-    _vung_bien_than_bi(hwnd)
-    if !_daily_should_continue()
-        return
-    _haki(hwnd)
-    if !_daily_should_continue()
-        return
-    _nguyen_to(hwnd)
-    if !_daily_should_continue()
-        return
-    _tap_kick(hwnd)
+    tasks := _daily_get_task_list()
+    totalTasks := tasks.Length
+    progress := _daily_load_progress(tasks, totalTasks)
+    startIndex := progress[1]
 
-    ; === NHAN VAT ===
-    if !_daily_should_continue()
-        return
-    _tang_qua(hwnd)
-    if !_daily_should_continue()
-        return
-    _bao_thach(hwnd)
-    if !_daily_should_continue()
-        return
-    _tinh_ban(hwnd)
+    if (startIndex > 1) {
+        _daily_log("Resume từ task #" . startIndex . " (đã xong #" . progress[2] . " | id=" . progress[3] . ")")
+    }
 
-    ; === BEN TRAI ===
-    if !_daily_should_continue()
-        return
-    _ra_khoi(hwnd)
+    Loop totalTasks {
+        taskIndex := A_Index
+        if (taskIndex < startIndex)
+            continue
 
-    if !_daily_should_continue()
-        return
-    _linh_treo_thuong(hwnd)
-    if !_daily_should_continue()
-        return
-    _dau_truong(hwnd)
-    if !_daily_should_continue()
-        return
-    _huan_luyen(hwnd)
-    if !_daily_should_continue()
-        return
-    _nau_an(hwnd)
-    if !_daily_should_continue()
-        return
-    _tam_bao(hwnd)
-    if !_daily_should_continue()
-        return
-    _boi_duong_tinh_linh(hwnd)
-    if !_daily_should_continue()
-        return
-    _nhan_thuong_linh_danh_thue(hwnd)
-    if !_daily_should_continue()
-        return
-    _dat_hang(hwnd)
-    ; if !_daily_should_continue()
-    ;     return
-    ; _linh_the_bai(hwnd)
-    ; if !_daily_should_continue()
-    ;     return
-    ; _cuong_hoa_tau_chien(hwnd)
-    ; if !_daily_should_continue()
-    ;     return
-    ; _cong_hien(hwnd)
-    ; if !_daily_should_continue()
-    ;     return
-    ; _mua_chien_tich(hwnd)
-    ; if !_daily_should_continue()
-    ;     return
-    ; _nhon_hop_qua(hwnd)
+        if !_daily_should_continue() {
+            _daily_log("Stop signal hwnd=" . hwnd . " tại task #" . taskIndex)
+            return
+        }
+
+        task := tasks[taskIndex]
+        try {
+            task[2].Call(hwnd)
+            _daily_save_progress(taskIndex, task[1])
+            _daily_log("Done hwnd=" . hwnd . " task #" . taskIndex . " | id=" . task[1])
+        } catch as err {
+            _daily_log("Fail hwnd=" . hwnd . " task #" . taskIndex . " | id=" . task[1] . " | err=" . err.Message)
+            throw err
+        }
+    }
+
+    _daily_reset_progress()
+    _daily_log("Complete daily hwnd=" . hwnd . ", reset progress")
 }
 
 _daily_should_continue() {
@@ -144,7 +216,7 @@ _daily_should_continue() {
 }
 
 _daily_build_stop_file() {
-    logDir := A_ScriptDir . "\logs"
+    logDir := _daily_get_base_dir() . "\logs"
     if !DirExist(logDir)
         DirCreate(logDir)
 
@@ -164,13 +236,21 @@ _daily_signal_stop(stopFile) {
 }
 
 _daily_start_worker(hwnd, stopFile) {
-    workerScript := A_ScriptDir . "\features\daily_worker.ahk"
+    pid := 0
+
+    if A_IsCompiled {
+        runCommand := Format('"{1}" --daily-worker "{2}" "{3}"', A_ScriptFullPath, hwnd, stopFile)
+        try Run(runCommand, _daily_get_base_dir(), "Hide", &pid)
+        return pid
+    }
+
+    baseDir := _daily_get_base_dir()
+    workerScript := baseDir . "\features\daily_worker.ahk"
     if !FileExist(workerScript)
         return 0
 
     runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_AhkPath, workerScript, hwnd, stopFile)
-    pid := 0
-    try Run(runCommand, A_ScriptDir, "Hide", &pid)
+    try Run(runCommand, baseDir, "Hide", &pid)
 
     return pid
 }
@@ -239,6 +319,8 @@ _nhon_hop_qua(hwnd) {
     _click_post(hwnd, 630, 460)
     Sleep LOAD_SLEEP
 
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
     Sleep EXIT_FEATURE_SLEEP
 }
@@ -377,6 +459,8 @@ _nhan_thuong_linh_danh_thue(hwnd) {
     _click_post(hwnd, 926, 41)
     Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 1045, 193)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 409, 503)
     Sleep FEATURE_TASK_LONG_SLEEP
     _click_post(hwnd, 869, 33)
     Sleep LOAD_SLEEP
@@ -395,18 +479,21 @@ _nhan_thuong_linh_danh_thue(hwnd) {
 }
 
 _cuong_hoa_tau_chien(hwnd) {
-    _click_post(hwnd, 61, 365)
+    _click_post(hwnd, 728, 43)
     Sleep FEATURE_TASK_SLEEP
-    _scroll_task(hwnd)
-    _click_post(hwnd, 872, 453)
+    _multi_click_post(hwnd, 419, 524, 2, LOAD_SLEEP)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 634, 556)
-    Sleep FEATURE_TASK_SLEEP
-    _multi_click_post(hwnd, 768, 340, 10)
+    _click_post(hwnd, 332, 200)
     Sleep LOAD_SLEEP
-    _multi_click_post(hwnd, 768, 427, 10)
+    _click_post(hwnd, 619, 560)
+
+    ;; start
+    Sleep FEATURE_TASK_SLEEP
+    _multi_click_post(hwnd, 768, 340, 20)
     Sleep LOAD_SLEEP
-    _multi_click_post(hwnd, 768, 515, 10)
+    _multi_click_post(hwnd, 768, 427, 20)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 768, 515, 20)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
@@ -459,10 +546,14 @@ _hoi_dam(hwnd) {
 }
 
 _linh_the_bai(hwnd) {
-    _click_post(hwnd, 61, 365)
+    _click_post(hwnd, 728, 43)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 876, 546)
+    _click_post(hwnd, 419, 524)
     Sleep LOAD_SLEEP
+    _click_post(hwnd, 400, 323)
+    Sleep FEATURE_TASK_SLEEP
+
+    ;Start
     _click_post(hwnd, 692, 559)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")

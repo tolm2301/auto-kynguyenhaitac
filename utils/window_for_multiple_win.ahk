@@ -1,12 +1,37 @@
-_win_get_game() {
-    hwnd := WinExist("Kỷ Nguyên Hải Tặc", , "1")
+_win_is_browser_process(processName) {
+    processName := StrLower(processName)
+    browserSet := Map(
+        "chrome.exe", true,
+        "msedge.exe", true,
+        "firefox.exe", true,
+        "brave.exe", true,
+        "opera.exe", true,
+        "opera_gx.exe", true,
+        "iexplore.exe", true
+    )
+    return browserSet.Has(processName)
+}
 
-    if !hwnd {
+_win_is_game_window(hwnd) {
+    title := WinGetTitle("ahk_id " . hwnd)
+    if !InStr(title, "Kỷ Nguyên Hải Tặc")
+        return false
+
+    processName := WinGetProcessName("ahk_id " . hwnd)
+    if _win_is_browser_process(processName)
+        return false
+
+    return true
+}
+
+_win_get_game() {
+    hwnds := _win_get_list()
+    if (hwnds.Length = 0) {
         MsgBox "Không tìm thấy cửa sổ game"
         Exit()
     }
 
-    return hwnd
+    return hwnds[1]
 }
 
 _win_get_game_1() {
@@ -21,9 +46,15 @@ _win_get_game_1() {
 }
 
 _win_get_list() {
-    hwnds := WinGetList("Kỷ Nguyên Hải Tặc")
+    hwnds := []
+    allHwnds := WinGetList()
 
-    if !hwnds {
+    for hwnd in allHwnds {
+        if _win_is_game_window(hwnd)
+            hwnds.Push(hwnd)
+    }
+
+    if (hwnds.Length = 0) {
         MsgBox "Không tìm thấy cửa sổ game"
         Exit()
     }
