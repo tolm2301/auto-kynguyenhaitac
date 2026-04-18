@@ -1,3 +1,5 @@
+global g_ocr_debug_mode := false
+
 _win_is_browser_process(processName) {
     processName := StrLower(processName)
     browserSet := Map(
@@ -141,7 +143,9 @@ _win_resize_game_1() {
     }
 }
 
-_ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
+_ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0, scale := 2.0) {
+    global g_ocr_debug_mode
+
     x := x1
     y := y1
     w := x2 - x1
@@ -155,21 +159,69 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0) {
     DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdcWindow)
     DllCall("DeleteDC", "Ptr", hdcMem)
 
-    options := _ocr_default_options(ocrOptions)
-    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: 1.7, grayscale: 1})
-    text := result.text
+    ; DEBUG SAVE - thêm lại đơn giản
+    if g_ocr_debug_mode {
+        try {
+            debugDir := A_ScriptDir . "\logs\ocr_debug"
+            DirCreate(debugDir)
+            stamp := FormatTime(A_Now, "yyyyMMdd_HHmmss")
+            ; Lưu với tên gồm: question/option + timestamp
+            debugPath := debugDir . "\ocr_" . stamp . "_x" . x . "_y" . y . ".png"
+            _ocr_save_bitmap_to_file(hbm, debugPath)
+            OutputDebug("[OCR_DEBUG] Saved: " debugPath)
+        }
+    }
 
-    ; text := _normalize_ocr_text(result.Text)
-    ; if _ocr_text_low_quality(text) {
-    ;     retry := _ocr_retry_options(options)
-    ;     retryResult := OCR.FromBitmap(hbm, retry)
-    ;     retryText := _normalize_ocr_text(retryResult.Text)
-    ;     text := _ocr_pick_better_text(text, retryText)
-    ; }
+    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: scale, grayscale: 1})
+    text := result.text
+    text := RegExReplace(text, "[^\x20-\x7E]", "")
 
     DllCall("DeleteObject", "Ptr", hbm)
 
     return text
+}
+
+; Thêm helper đơn giản save bitmap
+_ocr_save_bitmap_to_file(hbm, filePath) {
+    gdipToken := 0
+    pBitmap := 0
+
+    try {
+        if !hbm
+            throw Error("Invalid HBITMAP (0)")
+
+        hGdip := DllCall("GetModuleHandle", "Str", "gdiplus", "Ptr")
+        if !hGdip {
+            hGdip := DllCall("LoadLibrary", "Str", "gdiplus", "Ptr")
+            if !hGdip
+                throw Error("LoadLibrary(gdiplus) failed. LastError=" . A_LastError)
+        }
+
+        startupInput := Buffer(16 + (A_PtrSize * 2), 0)
+        NumPut("UInt", 1, startupInput, 0)
+
+        status := DllCall("gdiplus\GdiplusStartup", "Ptr*", &gdipToken, "Ptr", startupInput, "Ptr", 0, "UInt")
+        if (status != 0)
+            throw Error("GdiplusStartup failed. status=" . status)
+
+        status := DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hbm, "Ptr", 0, "Ptr*", &pBitmap, "UInt")
+        if (status != 0 || !pBitmap)
+            throw Error("GdipCreateBitmapFromHBITMAP failed. status=" . status)
+
+        pngClsid := Buffer(16, 0)
+        hr := DllCall("ole32\CLSIDFromString", "WStr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", pngClsid, "UInt")
+        if (hr != 0)
+            throw Error("CLSIDFromString(PNG) failed. hr=" . Format("0x{:08X}", hr))
+
+        status := DllCall("gdiplus\GdipSaveImageToFile", "Ptr", pBitmap, "WStr", filePath, "Ptr", pngClsid, "Ptr", 0, "UInt")
+        if (status != 0)
+            throw Error("GdipSaveImageToFile failed. status=" . status . " path=" . filePath)
+    } finally {
+        if pBitmap
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmap)
+        if gdipToken
+            DllCall("gdiplus\GdiplusShutdown", "Ptr", gdipToken)
+    }
 }
 
 _ocr_default_options(custom := 0) {

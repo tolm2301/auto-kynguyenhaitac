@@ -1,0 +1,74 @@
+Mình sẽ chốt thẳng theo hướng “không bỏ Windows OCR”, tức là chỉ giữ những cách còn khả thi trong ràng buộc đó và loại bỏ các đường không thể làm được.
+
+Thought for 27s
+
+Nếu bắt buộc phải dùng Windows OCR, thì mình nói thẳng:
+
+Bạn không thể “ép” Windows OCR hỗ trợ tiếng Việt nếu vi-VN không nằm trong danh sách OCR recognizer/capability của máy. OcrEngine.TryCreateFromLanguage(...) chỉ tạo được engine khi ngôn ngữ đó resolve được tới một OCR language đang có trên thiết bị; nếu không thì trả về null. Windows/PowerToys cũng nói OCR chỉ nhận các ngôn ngữ có OCR language pack đã cài.
+
+Vậy trong ràng buộc của bạn, chỉ còn 2 nhánh:
+
+Nhánh 1: kiểm tra xem máy/bản Windows của bạn có vi-VN thật không
+Chạy:
+
+[Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+[Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages
+
+Get-WindowsCapability -Online | Where-Object { $_.Name -Like 'Language.OCR*' }
+
+Nếu có vi-VN, thì tạo engine bằng TryCreateFromLanguage(new Language("vi-VN")). Nếu không có, thì không có đường supported nào để bật thêm chỉ bằng language pack thường; language pack/LIP là một chuyện, còn OCR là Feature on Demand riêng.
+
+Nhánh 2: vẫn dùng Windows OCR, nhưng đổi chiến lược để nó chỉ đọc “base Latin”
+Vì bạn nói không bỏ được Windows OCR, đây là cách còn khả thi nhất:
+
+Không OCR tiếng Việt nguyên câu.
+Chỉ cho Windows OCR đọc những vùng bạn đã tiền xử lý để gần thành chữ Latin không dấu.
+Phần dấu tiếng Việt phải tự xử lý bằng logic ảnh của bạn, không phải trông chờ Windows OCR.
+
+Cụ thể nên làm như này:
+
+Tách ROI thật nhỏ
+Chỉ cắt đúng vùng text, đừng đưa cả cửa sổ vào OCR. OcrEngine có giới hạn kích thước ảnh tối đa và hoạt động theo SoftwareBitmap, nên ROI nhỏ vừa nhanh vừa ít lỗi hơn.
+Tách 2 lớp trong ảnh chữ
+Lớp thân chữ: a, e, o, u, d...
+Lớp dấu/mark: sắc, huyền, hỏi, ngã, nặng, mũ, râu, gạch đ
+Ý tưởng là bạn tự loại hoặc tự nhận dạng lớp dấu trước, rồi mới đưa thân chữ vào Windows OCR en-US.
+Không dùng OCR để đọc dấu
+Với tiếng Việt, phần khó nhất là:
+ă â ê ô ơ ư đ
+dấu trên/dưới: á à ả ã ạ...
+Windows OCR en-US sẽ đọc phần này rất tệ. Nên để Windows OCR chỉ đọc phần base như a e o u d, còn bạn tự phục dựng bằng quy tắc từ ảnh.
+Làm theo kiểu “glyph decomposition”
+Ví dụ với từng ký tự crop nhỏ:
+tìm bounding box của thân ký tự
+tách các thành phần nhỏ nằm trên hoặc dưới thân
+gắn nhãn:
+một nét chéo trên phải → sắc
+một nét chéo trên trái → huyền
+móc/hook → hỏi
+dấu ngã → ngã
+chấm dưới → nặng
+mũ trên đầu → â/ê/ô
+râu bên phải trên → ơ/ư
+gạch ngang giữa → đ
+Sau đó mới ghép lại ký tự tiếng Việt hoàn chỉnh.
+Chỉ áp dụng cho font/UI cố định
+Cách này chỉ bền khi text của bạn:
+font khá cố định,
+kích thước không đổi nhiều,
+nền tương đối sạch.
+Nếu là game UI, đây lại chính là trường hợp thường gặp.
+
+Nói ngắn gọn: muốn giữ Windows OCR thì phải biến nó thành bộ đọc “không dấu”, còn bạn tự làm bộ nhận dạng dấu riêng. Đây là cách khả thi nhất trong ràng buộc của bạn.
+
+Thứ không nên làm nữa:
+
+cố cài Vietnamese display language rồi mong Windows OCR tự biết tiếng Việt,
+dùng en-US OCR trực tiếp lên ảnh tiếng Việt đầy đủ dấu,
+trông chờ hậu xử lý chuỗi cứu kết quả đã sai từ gốc.
+Các tài liệu của Microsoft chỉ cho thấy Windows OCR phụ thuộc vào recognizer/capability có sẵn trên thiết bị; không có cơ chế “tự thêm” một ngôn ngữ OCR chỉ bằng language pack thường.
+
+Nếu bạn muốn tiếp tục đúng hướng này, bước kế tiếp nên là:
+
+kiểm tra AvailableRecognizerLanguages,
+rồi mình phác cho bạn luôn pipeline Windows OCR + tách dấu tiếng Việt từ bitmap theo kiểu game UI cố định.

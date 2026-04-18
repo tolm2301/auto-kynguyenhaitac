@@ -1,7 +1,14 @@
+; Cache vocabulary cho OCR post-processing
+global _hoidap_vocab_cache := Map()
+global _hoidap_vocab_loaded := false
+global _hoidap_fuzzy_retry_cache := Map()
+
 _feature_hoidapcothuong() {
-    global isRunning, g_featureText
+    global isRunning, g_featureText, g_ocr_debug_mode
 
     _hoidap_reset_log()
+    _hoidap_load_vocab_cache()
+    g_ocr_debug_mode := false
 
     _win_resize_list()
     hwnds := _win_get_list()
@@ -20,35 +27,59 @@ _feature_hoidapcothuong() {
 }
 
 _hoidap_auto_answer(hwnd) {
-    iniPath := A_ScriptDir . "\resources\Question.ini"
-    snapshotText := _hoidap_read_quiz_snapshot(hwnd)
-    parsed := _hoidap_parse_quiz_snapshot(snapshotText)
+    global _hoidap_vocab_cache
 
-    questionText := parsed.question
-    if (questionText = "")
-        questionText := _hoidap_read_question(hwnd)
-    questionText := _hoidap_clean_question_text(questionText)
+    iniPath := A_ScriptDir . "\resources\Question.ini"
+    ; OCR retry theo scale tăng dần: 2.0 -> 2.25 -> 2.5
+    scaleLevels := [2.0, 2.25, 2.5]
+    questionText := ""
+    usedScale := ""
+    for idx, scl in scaleLevels {
+        questionText := _ocr_from_bit_map(hwnd, 580, 146, 930, 190, 0, scl)
+        questionText := _hoidap_clean_question_text(questionText)
+        if (Trim(questionText) != "") {
+            usedScale := scl
+            break
+        }
+    }
+
     if (Trim(questionText) = "") {
         _hoidap_log("OCR câu hỏi rỗng")
         return
     }
 
-    bestMatch := FindBestFuzzyMatchAcrossIni(iniPath, questionText, 0.4)
+    _hoidap_log("OCR question retry done | scale=" . usedScale . " | text=" . questionText)
+
+    questionMapped := questionText
+    if (_hoidap_vocab_cache.Has("questionTokens"))
+        questionMapped := _hoidap_map_ocr_to_vocab(questionText, _hoidap_vocab_cache["questionTokens"], _hoidap_vocab_cache["questionFixCache"])
+
+    _hoidap_log("OCR question | raw=" . questionText . " | mapped=" . questionMapped)
+
+    bestMatch := _hoidap_find_best_with_retry(iniPath, questionMapped, questionText, 0.8)
     if (bestMatch.Score <= 0) {
-        _hoidap_log("Không tìm thấy câu hỏi đủ match (>=0.4) | OCR Q: " . questionText)
+        _hoidap_log("Không tìm thấy câu hỏi đủ match | mapped=" . questionMapped . " | raw=" . questionText)
+        return
+    }
+
+    ; Kiểm tra question đạt ngưỡng tối thiểu 0.3
+    if (bestMatch.Score < 0.3) {
+        _hoidap_log("Question score thấp: " . Format("{:.3f}", bestMatch.Score))
         return
     }
 
     _hoidap_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | section=" . bestMatch.Section . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
 
     optionMap := _hoidap_read_option_map(hwnd)
-    for letter in ["A", "B", "C"] {
-        if (Trim(optionMap[letter]) = "" && parsed.options.Has(letter) && Trim(parsed.options[letter]) != "")
-            optionMap[letter] := parsed.options[letter]
-    }
+    _hoidap_log("OCR options raw | A=[" . (optionMap.Has("A") ? optionMap["A"] : "") . "] | B=[" . (optionMap.Has("B") ? optionMap["B"] : "") . "] | C=[" . (optionMap.Has("C") ? optionMap["C"] : "") . "]")
     _hoidap_log_game_options(optionMap)
-    result := _pick_answer_letter_from_option_map(bestMatch.Answer, optionMap)
-    answerLetter := result.letter
+    answerResult := _hoidap_find_best_answer_for_options(optionMap, bestMatch.Answer)
+    if (answerResult.letter = "" || answerResult.score < 0.3) {
+        _hoidap_log("Answer match thap | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score))
+        return
+    }
+    _hoidap_log("Answer matched | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score) . " answer=" . answerResult.matchedAnswer)
+    answerLetter := answerResult.letter
 
     if (answerLetter = "") {
         _hoidap_log("Không xác định được đáp án A/B/C | OCR Q: " . questionText)
@@ -56,7 +87,7 @@ _hoidap_auto_answer(hwnd) {
     }
 
     if _click_hoidap_answer(hwnd, answerLetter)
-        _hoidap_log("Đã trả lời " . answerLetter . " | Answer score: " . Format("{:.3f}", result.score) . " | expected=" . result.expected)
+        _hoidap_log("Đã trả lời " . answerLetter . " | Answer score: " . Format("{:.3f}", answerResult.score) . " | matched=" . answerResult.matchedAnswer)
 }
 
 _hoidap_log_game_options(optionMap) {
@@ -74,31 +105,6 @@ _hoidap_get_section() {
     return "Questions"
 }
 
-_hoidap_read_question(hwnd) {
-    return _ocr_from_bit_map(hwnd, 250, 146, 930, 190)
-}
-
-_hoidap_read_quiz_snapshot(hwnd) {
-    return _ocr_from_bit_map(hwnd, 250, 146, 930, 292)
-}
-
-_hoidap_parse_quiz_snapshot(text) {
-    src := StrReplace(text, "`r", "")
-    src := RegExReplace(src, "\s+", " ")
-    result := {question: "", options: Map("A", "", "B", "", "C", "")}
-
-    if RegExMatch(src, "i)cau\s*hoi\s*[:\-]?\s*(.+?)(?=\bA\s*[:\-\.)])", &mq)
-        result.question := Trim(mq[1])
-    if RegExMatch(src, "i)\bA\s*[:\-\.)]\s*(.+?)(?=\bB\s*[:\-\.)])", &mA)
-        result.options["A"] := Trim(mA[1])
-    if RegExMatch(src, "i)\bB\s*[:\-\.)]\s*(.+?)(?=\bC\s*[:\-\.)])", &mB)
-        result.options["B"] := Trim(mB[1])
-    if RegExMatch(src, "i)\bC\s*[:\-\.)]\s*(.+?)(?=\bXac\s*dinh|$)", &mC)
-        result.options["C"] := Trim(mC[1])
-
-    _hoidap_log("OCR snapshot | " . src)
-    return result
-}
 
 _hoidap_get_option_config() {
     static cfg := Map(
@@ -116,11 +122,121 @@ _hoidap_get_confirm_button_config() {
 _hoidap_read_option_map(hwnd) {
     cfg := _hoidap_get_option_config()
     optionMap := Map()
+
     for letter in ["A", "B", "C"] {
         opt := cfg[letter]
-        optionMap[letter] := _ocr_from_bit_map(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2)
+        optionMap[letter] := _hoidap_read_option_text_with_retry(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2)
     }
     return optionMap
+}
+
+_hoidap_read_option_text_with_retry(hwnd, x1, y1, x2, y2) {
+    scaleLevels := [2.5, 2.75, 3.0]
+    bestText := ""
+    firstNonEmpty := ""
+
+    for idx, scl in scaleLevels {
+        text := Trim(_ocr_from_bit_map(hwnd, x1, y1, x2, y2, 0, scl))
+        if (text = "")
+            continue
+
+        if (firstNonEmpty = "")
+            firstNonEmpty := text
+
+        if (bestText = "")
+            bestText := text
+    }
+
+    if (bestText != "")
+        return bestText
+    return firstNonEmpty
+}
+
+_hoidap_find_best_answer_for_options(optionMap, bestMatchAnswer) {
+    global _hoidap_vocab_cache
+
+    expectedRaw := _extract_answer_value(bestMatchAnswer)
+    expectedNorm := _normalize_qa_text(expectedRaw)
+    if (expectedNorm = "")
+        return {letter: "", score: 0.0, matchedAnswer: "", matchedOcrText: ""}
+
+    bestOption := ""
+    bestScore := 0.0
+    bestRawScore := 0.0
+    bestMappedScore := 0.0
+    bestMatchedAnswer := ""
+    bestMatchedOcrText := ""
+
+    ; Thử với các ngưỡng: 0.8 -> 0.7 -> 0.6 -> 0.5 -> 0.4 -> 0.3
+    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    ; Ưu tiên tie-break khi vẫn bằng điểm: C > B > A
+    letterPriority := Map("A", 1, "B", 2, "C", 3)
+
+    for _, minThreshold in thresholdLevels {
+        for letter in ["A", "B", "C"] {
+            if !optionMap.Has(letter)
+                continue
+
+            ocrText := optionMap[letter]
+            ocrParsed := _extract_option_value_from_ocr(ocrText, letter)
+            ocrNorm := _normalize_qa_text(ocrParsed)
+            if (ocrNorm = "")
+                continue
+
+            ; 1) Score theo OCR nguyên bản (trước map)
+            rawScore := _hoidap_similarity(expectedNorm, ocrNorm)
+
+            ; 2) Map OCR text qua vocab answer để fix lỗi OCR
+            mappedNorm := ocrNorm
+            if (_hoidap_vocab_cache.Has("answerTokens"))
+                mappedNorm := _hoidap_map_ocr_to_vocab(ocrNorm, _hoidap_vocab_cache["answerTokens"], _hoidap_vocab_cache["answerFixCache"])
+
+            ; 3) Score sau map
+            mappedScore := _hoidap_similarity(expectedNorm, mappedNorm)
+
+            ; Điểm chính vẫn là điểm cao hơn giữa raw/mapped
+            score := Max(rawScore, mappedScore)
+
+            ; Tiebreak theo yêu cầu:
+            ; - ưu tiên rawScore cao hơn
+            ; - nếu rawScore bằng, ưu tiên mappedScore cao hơn
+            ; - nếu vẫn bằng, ưu tiên C > B > A
+            isBetter := false
+            if (score > bestScore) {
+                isBetter := true
+            } else if (score = bestScore) {
+                if (rawScore > bestRawScore) {
+                    isBetter := true
+                } else if (rawScore = bestRawScore) {
+                    if (mappedScore > bestMappedScore) {
+                        isBetter := true
+                    } else if (mappedScore = bestMappedScore) {
+                        if (bestOption = "" || letterPriority[letter] > letterPriority[bestOption])
+                            isBetter := true
+                    }
+                }
+            }
+
+            if (score >= minThreshold && isBetter) {
+                bestScore := score
+                bestRawScore := rawScore
+                bestMappedScore := mappedScore
+                bestOption := letter
+                bestMatchedAnswer := ocrParsed
+                bestMatchedOcrText := ocrParsed
+            }
+        }
+
+        if (bestScore >= minThreshold)
+            break
+    }
+
+    return {
+        letter: bestOption,
+        score: bestScore,
+        matchedAnswer: bestMatchedAnswer,
+        matchedOcrText: bestMatchedOcrText
+    }
 }
 
 _click_hoidap_answer(hwnd, answerLetter) {
@@ -136,78 +252,11 @@ _click_hoidap_answer(hwnd, answerLetter) {
     return true
 }
 
-_pick_answer_letter_from_option_map(answerText, optionMap) {
-    expected := _normalize_qa_text(_extract_answer_value(answerText))
-    fallbackLetter := _extract_answer_letter(answerText)
-    if (expected = "")
-        return {letter: "", score: 0.0, expected: expected}
-
-    bestLetter := ""
-    bestScore := -1.0
-    secondScore := -1.0
-    detail := ""
-    hasAnyOptionText := false
-
-    for letter in ["A", "B", "C"] {
-        if !optionMap.Has(letter)
-            continue
-
-        optionParsed := _extract_option_value_from_ocr(optionMap[letter], letter)
-        optionNorm := _normalize_qa_text(optionParsed)
-        if (optionNorm = "")
-            continue
-
-        hasAnyOptionText := true
-
-        score := _hoidap_similarity(expected, optionNorm)
-        detail .= letter . "=" . Format("{:.3f}", score) . "(" . optionNorm . ") "
-
-        if (score > bestScore) {
-            secondScore := bestScore
-            bestScore := score
-            bestLetter := letter
-        } else if (score > secondScore) {
-            secondScore := score
-        }
-    }
-
-    gap := bestScore - secondScore
-    _hoidap_log("Answer score | expected=" . expected . " | " . Trim(detail) . "| best=" . Format("{:.3f}", bestScore) . " second=" . Format("{:.3f}", secondScore) . " gap=" . Format("{:.3f}", gap) . " pick=" . bestLetter)
-
-    if !hasAnyOptionText {
-        if (fallbackLetter != "") {
-            _hoidap_log("Answer OCR rong, fallback theo INI letter=" . fallbackLetter)
-            return {letter: fallbackLetter, score: 0.0, expected: expected}
-        }
-    }
-
-    if (bestLetter = "")
-        return {letter: "", score: 0.0, expected: expected}
-
-    if (bestScore < 0.40) {
-        if (fallbackLetter != "") {
-            _hoidap_log("Do tin cay thap, fallback theo INI letter=" . fallbackLetter)
-            return {letter: fallbackLetter, score: bestScore, expected: expected}
-        }
-        _hoidap_log("Do tin cay thap, bo qua cau hoi")
-        return {letter: "", score: bestScore, expected: expected}
-    }
-
-    return {letter: bestLetter, score: bestScore, expected: expected}
-}
-
 _extract_answer_value(answerText) {
     text := Trim(answerText)
     if RegExMatch(text, "^[ABCabc]\s*[:\-\.)]\s*(.+)$", &m)
         return Trim(m[1])
     return text
-}
-
-_extract_answer_letter(answerText) {
-    text := Trim(answerText)
-    if RegExMatch(text, "^([ABCabc])\s*[:\-\.)]", &m)
-        return StrUpper(m[1])
-    return ""
 }
 
 _extract_option_value_from_ocr(optionText, letter) {
@@ -298,7 +347,7 @@ _hoidap_reset_log() {
     try FileDelete(logPath)
 }
 
-FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
+FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.8) {
     BestScore := 0
     MatchedQ := ""
     MatchedA := ""
@@ -343,7 +392,7 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.6) {
     return {Score: 0}
 }
 
-FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.4) {
+FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.8) {
     BestScore := 0
     MatchedQ := ""
     MatchedA := ""
@@ -409,12 +458,195 @@ FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.4) {
         }
     }
 
-    _hoidap_log_threshold_candidates(candidates, Threshold)
-
     if (BestScore < Threshold)
         return {Score: 0}
 
     return {Score: BestScore, Question: MatchedQ, Answer: MatchedA, Section: MatchedSection}
+}
+
+_hoidap_find_best_with_retry(iniPath, mappedText, rawText, threshold) {
+    global _hoidap_fuzzy_retry_cache
+
+    cacheKey := _normalize_question_for_match(mappedText) . "|" . _normalize_question_for_match(rawText) . "|" . threshold
+    if (_hoidap_fuzzy_retry_cache.Has(cacheKey))
+        return _hoidap_fuzzy_retry_cache[cacheKey]
+
+    ; Thử với nhiều ngưỡng: 0.8 -> 0.7 -> 0.6 -> 0.5 -> 0.4 -> 0.3
+    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+
+    final := {Score: 0}
+
+    for _, currentThreshold in thresholdLevels {
+        if (Trim(mappedText) != "") {
+            result := FindBestFuzzyMatchAcrossIni(iniPath, mappedText, currentThreshold)
+            if (result.Score > 0) {
+                _hoidap_fuzzy_retry_cache[cacheKey] := result
+                return result
+            }
+        }
+
+        if (Trim(rawText) != "") {
+            result := FindBestFuzzyMatchAcrossIni(iniPath, rawText, currentThreshold)
+            if (result.Score > 0) {
+                _hoidap_fuzzy_retry_cache[cacheKey] := result
+                return result
+            }
+        }
+    }
+
+    _hoidap_fuzzy_retry_cache[cacheKey] := final
+    return final
+}
+
+_hoidap_load_vocab_cache() {
+    global _hoidap_vocab_loaded, _hoidap_vocab_cache
+
+    if (_hoidap_vocab_loaded)
+        return
+    _hoidap_vocab_loaded := true
+
+    iniPath := A_ScriptDir . "\resources\Question.ini"
+    if !FileExist(iniPath)
+        return
+
+    questionTokens := Map()
+    answerTokens := Map()
+
+    try {
+        allData := IniRead(iniPath, "Questions")
+    } catch {
+        return
+    }
+
+    Loop Parse, allData, "`n", "`r" {
+        if (A_LoopField = "")
+            continue
+
+        parsed := _hoidap_parse_qa_line(A_LoopField)
+        if !parsed.ok
+            continue
+
+        questionPart := parsed.question
+        answerPart := parsed.answer
+
+        for token in _split_tokens_for_match(_normalize_question_for_match(questionPart))
+            questionTokens[token] := true
+
+        for token in _hoidap_tokenize_answer_for_vocab(answerPart)
+            answerTokens[token] := true
+    }
+
+    _hoidap_vocab_cache["questionTokens"] := questionTokens
+    _hoidap_vocab_cache["answerTokens"] := answerTokens
+    _hoidap_vocab_cache["questionFixCache"] := Map()
+    _hoidap_vocab_cache["answerFixCache"] := Map()
+
+    _hoidap_log("Vocab cache loaded | questionTokens=" . questionTokens.Count . " | answerTokens=" . answerTokens.Count)
+}
+
+_hoidap_parse_qa_line(line) {
+    row := Trim(line)
+    if (row = "")
+        return {ok: false, question: "", answer: ""}
+
+    eqPos := InStr(row, "=")
+    if (eqPos) {
+        q := Trim(SubStr(row, 1, eqPos - 1))
+        a := Trim(SubStr(row, eqPos + 1))
+        if (q != "" && a != "")
+            return {ok: true, question: q, answer: a}
+    }
+
+    ; Fallback cho format kiểu: question: answer
+    if RegExMatch(row, "^(.*?):\s*(.+)$", &m) {
+        q := Trim(m[1])
+        a := Trim(m[2])
+        if (q != "" && a != "")
+            return {ok: true, question: q, answer: a}
+    }
+
+    return {ok: false, question: "", answer: ""}
+}
+
+_hoidap_tokenize_answer_for_vocab(answerText) {
+    tokens := []
+    t := StrLower(Trim(answerText))
+    if (t = "")
+        return tokens
+
+    ; Bỏ prefix A/B/C nếu có trong answer
+    t := RegExReplace(t, "^[abc]\s*[:\-\.)]\s*", "")
+
+    ; Đồng bộ sửa lỗi OCR phổ biến
+    t := RegExReplace(t, "(?<=[a-z])[06](?=[a-z])", "o")
+    t := RegExReplace(t, "(?<=[a-z])1(?=[a-z])", "i")
+    t := RegExReplace(t, "(?<=[a-z])5(?=[a-z])", "s")
+    t := RegExReplace(t, "(?<=[a-z])4(?=[a-z])", "a")
+
+    ; Tokenize trực tiếp từ raw answer, không cắt trước ký tự đặc biệt
+    i := 1
+    while (i <= StrLen(t)) {
+        if RegExMatch(SubStr(t, i), "^[a-z0-9]{3,}", &m) {
+            tokens.Push(m[0])
+            i += StrLen(m[0])
+        } else {
+            i += 1
+        }
+    }
+
+    return tokens
+}
+
+_hoidap_map_ocr_to_vocab(ocrText, vocabSet, tokenFixCache := "") {
+    if (Trim(ocrText) = "")
+        return ""
+
+    normText := _normalize_question_for_match(ocrText)
+    tokens := _split_tokens_for_match(normText)
+    if (tokens.Length = 0)
+        return normText
+
+    result := ""
+    for token in tokens {
+        mappedToken := token
+
+        if (IsObject(vocabSet) && vocabSet.Has(token)) {
+            mappedToken := token
+        } else if (IsObject(tokenFixCache) && tokenFixCache.Has(token)) {
+            mappedToken := tokenFixCache[token]
+        } else {
+            bestMatch := ""
+            bestScore := 0.0
+            tokenLen := StrLen(token)
+
+            if IsObject(vocabSet) {
+                for vocabToken, _ in vocabSet {
+                    if (Abs(StrLen(vocabToken) - tokenLen) > 2)
+                        continue
+                    if (SubStr(vocabToken, 1, 1) != SubStr(token, 1, 1))
+                        continue
+
+                    score := StrDiff(token, vocabToken)
+                    if (score > bestScore && score >= 0.8) {
+                        bestScore := score
+                        bestMatch := vocabToken
+                    }
+                }
+            }
+
+            if (bestMatch != "")
+                mappedToken := bestMatch
+
+            if IsObject(tokenFixCache)
+                tokenFixCache[token] := mappedToken
+        }
+
+        if (result != "")
+            result .= " "
+        result .= mappedToken
+    }
+
+    return Trim(result)
 }
 
 _hoidap_insert_candidate_sorted(candidates, candidate) {
@@ -435,18 +667,6 @@ _hoidap_insert_candidate_sorted(candidates, candidate) {
 
     if !inserted
         candidates.Push(candidate)
-}
-
-_hoidap_log_threshold_candidates(candidates, threshold) {
-    if (candidates.Length = 0) {
-        _hoidap_log("Threshold candidates | >= " . threshold . " | none")
-        return
-    }
-
-    _hoidap_log("Threshold candidates | >= " . threshold . " | count=" . candidates.Length)
-    for item in candidates {
-        _hoidap_log("Candidate | score=" . Format("{:.6f}", item.score) . " | token=" . Format("{:.6f}", item.token) . " | char=" . Format("{:.6f}", item.char) . " | blend=" . Format("{:.6f}", item.blend) . " | tie=" . Format("{:.6f}", item.tie) . " | section=" . item.section . " | Q=" . item.question)
-    }
 }
 
 _normalize_question_for_match(text) {
@@ -470,9 +690,13 @@ _question_token_overlap_score(a, b) {
     if (aa.Length = 0 || bb.Length = 0)
         return 0
 
+    bbSet := Map()
+    for token in bb
+        bbSet[token] := true
+
     hit := 0
     for token in aa {
-        if _array_has_token(bb, token)
+        if (bbSet.Has(token) || _array_has_token(bb, token))
             hit += 1
     }
     return hit / aa.Length
