@@ -43,7 +43,21 @@ _feature__uta() {
         for hwnd in hwnds {
             _click_post(hwnd, 219, 64)
         }
-        
+
+        while true {
+        if (getHour() = 19 and getMinute() = 30) {
+            Sleep 5000
+            
+            for hwnd in hwnds {
+                _click_post(hwnd, 653, 530)
+                sleep 1000
+                _click_post(hwnd, 1209, 630)
+            }
+
+            return
+        }
+    }
+
     } finally {
         _feature_reset_running_status()
     }
