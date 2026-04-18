@@ -88,6 +88,7 @@ _httt_load_vocab_cache() {
     iniPath := A_ScriptDir . "\resources\Question.ini"
     questionTokens := Map()
     answerTokens := Map()
+    iniEntries := []
 
     try {
         allData := IniRead(iniPath, "Haitacthongthai")
@@ -99,15 +100,21 @@ _httt_load_vocab_cache() {
                 continue
             questionPart := Trim(SubStr(A_LoopField, 1, pos - 1))
             answerPart := Trim(SubStr(A_LoopField, pos + 1))
-            for token in _httt_split_tokens_for_match(_httt_normalize_question_for_match(questionPart))
+            qNorm := _httt_normalize_question_for_match(questionPart)
+            for token in _httt_split_tokens_for_match(qNorm)
                 questionTokens[token] := true
             for token in _httt_split_tokens_for_match(_httt_normalize(answerPart))
                 answerTokens[token] := true
+
+            iniEntries.Push({q: questionPart, qNorm: qNorm, qCompact: StrReplace(qNorm, " ", ""), a: answerPart})
         }
+    } catch {
+        return
     }
 
     _httt_vocab_cache["questionTokens"] := questionTokens
     _httt_vocab_cache["answerTokens"] := answerTokens
+    _httt_vocab_cache["iniEntries"] := iniEntries
     _httt_vocab_cache["questionFixCache"] := Map()
     _httt_vocab_cache["answerFixCache"] := Map()
 }
@@ -143,16 +150,77 @@ _httt_find_best_with_retry(iniPath, section, mappedText, rawText, threshold) {
     thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
 
     for _, currentThreshold in thresholdLevels {
-        result := _httt_fuzzy_match(iniPath, section, mappedText, currentThreshold)
-        if (result.Score > 0)
-            return result
+        if (Trim(mappedText) != "") {
+            result := _httt_fuzzy_match_cached(mappedText, currentThreshold)
+            if (result.Score > 0)
+                return result
+        }
 
         if (Trim(rawText) != "") {
-            result := _httt_fuzzy_match(iniPath, section, rawText, currentThreshold)
+            result := _httt_fuzzy_match_cached(rawText, currentThreshold)
             if (result.Score > 0)
                 return result
         }
     }
+
+    return {Score: 0}
+}
+
+_httt_fuzzy_match_cached(searchStr, threshold) {
+    global _httt_vocab_cache
+
+    if !_httt_vocab_cache.Has("iniEntries")
+        return {Score: 0}
+
+    entries := _httt_vocab_cache["iniEntries"]
+    if !entries || entries.Length = 0
+        return {Score: 0}
+
+    searchNorm := _httt_normalize_question_for_match(searchStr)
+    if (searchNorm = "")
+        return {Score: 0}
+
+    searchCompact := StrReplace(searchNorm, " ", "")
+    searchTokens := _httt_split_tokens_for_match(searchNorm)
+    if (searchTokens.Length = 0)
+        return {Score: 0}
+
+    bestScore := 0
+    matchedQ := ""
+    matchedA := ""
+
+    searchTokenSet := Map()
+    for token in searchTokens
+        searchTokenSet[token] := true
+
+    for entry in entries {
+        commonCount := 0
+        entryTokens := _httt_split_tokens_for_match(entry.qNorm)
+        for token in entryTokens {
+            if searchTokenSet.Has(token)
+                commonCount++
+        }
+
+        if (commonCount < 2)
+            continue
+
+        charScore := _httt_str_diff(searchCompact, entry.qCompact)
+        tokenScore := _httt_question_token_overlap_score(searchNorm, entry.qNorm)
+        blendScore := (charScore * 0.65 + tokenScore * 0.35)
+        score := Max(charScore, tokenScore, blendScore)
+
+        if (score > bestScore) {
+            bestScore := score
+            matchedQ := entry.q
+            matchedA := entry.a
+        }
+
+        if (score >= 0.95)
+            break
+    }
+
+    if (bestScore >= threshold)
+        return {Score: bestScore, Question: matchedQ, Answer: matchedA}
 
     return {Score: 0}
 }

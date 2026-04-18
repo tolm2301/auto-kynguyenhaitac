@@ -478,7 +478,7 @@ _hoidap_find_best_with_retry(iniPath, mappedText, rawText, threshold) {
 
     for _, currentThreshold in thresholdLevels {
         if (Trim(mappedText) != "") {
-            result := FindBestFuzzyMatchAcrossIni(iniPath, mappedText, currentThreshold)
+            result := _hoidap_fuzzy_match_cached(mappedText, currentThreshold)
             if (result.Score > 0) {
                 _hoidap_fuzzy_retry_cache[cacheKey] := result
                 return result
@@ -486,7 +486,7 @@ _hoidap_find_best_with_retry(iniPath, mappedText, rawText, threshold) {
         }
 
         if (Trim(rawText) != "") {
-            result := FindBestFuzzyMatchAcrossIni(iniPath, rawText, currentThreshold)
+            result := _hoidap_fuzzy_match_cached(rawText, currentThreshold)
             if (result.Score > 0) {
                 _hoidap_fuzzy_retry_cache[cacheKey] := result
                 return result
@@ -511,6 +511,7 @@ _hoidap_load_vocab_cache() {
 
     questionTokens := Map()
     answerTokens := Map()
+    iniEntries := []
 
     try {
         allData := IniRead(iniPath, "Questions")
@@ -528,20 +529,83 @@ _hoidap_load_vocab_cache() {
 
         questionPart := parsed.question
         answerPart := parsed.answer
+        qNorm := _normalize_question_for_match(questionPart)
 
-        for token in _split_tokens_for_match(_normalize_question_for_match(questionPart))
+        for token in _split_tokens_for_match(qNorm)
             questionTokens[token] := true
 
         for token in _hoidap_tokenize_answer_for_vocab(answerPart)
             answerTokens[token] := true
+
+        iniEntries.Push({q: questionPart, qNorm: qNorm, qCompact: StrReplace(qNorm, " ", ""), a: answerPart})
     }
 
     _hoidap_vocab_cache["questionTokens"] := questionTokens
     _hoidap_vocab_cache["answerTokens"] := answerTokens
+    _hoidap_vocab_cache["iniEntries"] := iniEntries
     _hoidap_vocab_cache["questionFixCache"] := Map()
     _hoidap_vocab_cache["answerFixCache"] := Map()
 
-    _hoidap_log("Vocab cache loaded | questionTokens=" . questionTokens.Count . " | answerTokens=" . answerTokens.Count)
+    _hoidap_log("Vocab cache loaded | questionTokens=" . questionTokens.Count . " | answerTokens=" . answerTokens.Count . " | iniEntries=" . iniEntries.Length)
+}
+
+_hoidap_fuzzy_match_cached(searchStr, threshold) {
+    global _hoidap_vocab_cache
+
+    if !_hoidap_vocab_cache.Has("iniEntries")
+        return {Score: 0}
+
+    entries := _hoidap_vocab_cache["iniEntries"]
+    if !entries || entries.Length = 0
+        return {Score: 0}
+
+    searchNorm := _normalize_question_for_match(searchStr)
+    if (searchNorm = "")
+        return {Score: 0}
+
+    searchCompact := StrReplace(searchNorm, " ", "")
+    searchTokens := _split_tokens_for_match(searchNorm)
+    if (searchTokens.Length = 0)
+        return {Score: 0}
+
+    bestScore := 0
+    bestQ := ""
+    bestA := ""
+
+    searchTokenSet := Map()
+    for token in searchTokens
+        searchTokenSet[token] := true
+
+    for entry in entries {
+        commonCount := 0
+        entryTokens := _split_tokens_for_match(entry.qNorm)
+        for token in entryTokens {
+            if searchTokenSet.Has(token)
+                commonCount++
+        }
+
+        if (commonCount < 2)
+            continue
+
+        charScore := StrDiff(searchCompact, entry.qCompact)
+        tokenScore := _question_token_overlap_score(searchNorm, entry.qNorm)
+        blendScore := (charScore * 0.65 + tokenScore * 0.35)
+        score := Max(charScore, tokenScore, blendScore)
+
+        if (score > bestScore) {
+            bestScore := score
+            bestQ := entry.q
+            bestA := entry.a
+        }
+
+        if (score >= 0.95)
+            break
+    }
+
+    if (bestScore >= threshold)
+        return {Score: bestScore, Question: bestQ, Answer: bestA, Section: _hoidap_get_section()}
+
+    return {Score: 0}
 }
 
 _hoidap_parse_qa_line(line) {
