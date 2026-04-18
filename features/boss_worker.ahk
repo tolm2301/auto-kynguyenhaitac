@@ -2,9 +2,21 @@
 #SingleInstance Off
 #NoTrayIcon
 
-#Include ..\utils\post_message.ahk
-#Include ..\utils\log_file.ahk
+#include ..\utils\OCR.ahk
+#include ..\utils\date.ahk
+#include ..\utils\post_message.ahk
+#include ..\utils\log_file.ahk
+#include ..\utils\window.ahk
 #Include boss.ahk
+
+
+global g_featureText := {text: ""}
+
+_feature_reset_running_status() {
+    global g_featureText
+    if (IsSet(g_featureText))
+        g_featureText.text := "Tính năng đang chạy: Chưa có"
+}
 
 if (A_Args.Length < 2)
     ExitApp(1)
