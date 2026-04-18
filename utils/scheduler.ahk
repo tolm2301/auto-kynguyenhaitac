@@ -199,7 +199,9 @@ _scheduler_run_event(eventName) {
         case "Hỏi đáp có thưởng":
             _feature_hoidapcothuong()
         case "Register Uta World":
-            _feature_register_uta()    
+            _feature_register_uta()  
+        case "Uta World":
+            _feature__uta()    
         default:
             throw Error("Event chưa được map feature: " . eventName)
     }
@@ -218,7 +220,8 @@ _scheduler_is_supported_event(eventName) {
         "Ảnh hồn", true,
         "Tấn công hải quân", true,
         "Hỏi đáp có thưởng", true,
-        "Register Uta World", true
+        "Register Uta World", true,
+        "Uta World", true,
     )
 
     return supported.Has(eventName)

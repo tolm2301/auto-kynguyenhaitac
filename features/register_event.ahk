@@ -23,3 +23,29 @@ _feature_register_uta() {
         _feature_reset_running_status()
     }
 }
+
+_feature__uta() {
+    _win_resize_list()
+    g_featureText.text := "Tính năng đang chạy: Uta World"
+    hwnds := _win_get_list()
+    global isRunning
+    isRunning := true
+
+    try {
+        Sleep 5000
+
+        for hwnd in hwnds {
+            _click_post(hwnd, 1217, 541)
+        }
+
+        Sleep 15000
+
+        for hwnd in hwnds {
+            _click_post(hwnd, 219, 64)
+        }
+        
+    } finally {
+        _feature_reset_running_status()
+    }
+}
+
