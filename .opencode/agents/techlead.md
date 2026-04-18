@@ -14,6 +14,7 @@ permission:
   task:
     "*": deny
     "developer": allow
+    "ba": allow
 ---
 
 # AGENT - TechLead
