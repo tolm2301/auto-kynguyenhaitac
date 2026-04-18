@@ -1,7 +1,11 @@
+global _httt_vocab_cache := Map()
+global _httt_vocab_loaded := false
+
 _feature_haitacthongthai() {
-    global isRunning, g_featureText
+    global isRunning, g_featureText, _httt_vocab_cache
 
     _httt_reset_log()
+    _httt_load_vocab_cache()
 
     _win_resize_list()
     hwnds := _win_get_list()
@@ -17,33 +21,53 @@ _feature_haitacthongthai() {
 
         hwnd := hwnds[1]
 
+        scaleLevels := [2.0, 2.25, 2.5]
+        questionText := ""
+        for idx, scl in scaleLevels {
+            questionText := _ocr_from_bit_map(hwnd, 294, 190, 977, 340, 0, scl)
+            questionText := _httt_clean_question_text(questionText)
+            if (Trim(questionText) != "")
+                break
+        }
 
-        questionText := _httt_read_question(hwnd)
-        questionText := _httt_clean_question_text(questionText)
         if (Trim(questionText) = "") {
             _httt_log("OCR câu hỏi rỗng")
             return
         }
 
-        bestMatch := _httt_find_fuzzy_match(iniPath, section, questionText, 0.4)
+        questionMapped := questionText
+        if (_httt_vocab_cache.Has("questionTokens"))
+            questionMapped := _httt_map_ocr_to_vocab(questionText, _httt_vocab_cache["questionTokens"], _httt_vocab_cache["questionFixCache"])
+
+        _httt_log("OCR question | raw=" . questionText . " | mapped=" . questionMapped)
+
+        bestMatch := _httt_find_best_with_retry(iniPath, section, questionMapped, questionText, 0.8)
         if (bestMatch.Score <= 0) {
-            _httt_log("Không match câu hỏi | OCR Q: " . questionText)
+            _httt_log("Không tìm thấy câu hỏi đủ match | mapped=" . questionMapped . " | raw=" . questionText)
             return
         }
+
+        if (bestMatch.Score < 0.3) {
+            _httt_log("Question score thấp: " . Format("{:.3f}", bestMatch.Score))
+            return
+        }
+
+        _httt_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
 
         for hwndElement in hwnds {
             if !isRunning
                 return
 
-            optionMap := _httt_read_option_map(hwndElement)
-            result := _httt_pick_answer(bestMatch.Answer, optionMap)
-            if (result.letter = "") {
-                _httt_log("Không xác định đáp án | Q: " . bestMatch.Question)
+            optionMap := _httt_read_option_map(hwndElement, bestMatch.Answer)
+            answerResult := _httt_find_best_answer_for_options(optionMap, bestMatch.Answer)
+            if (answerResult.letter = "" || answerResult.score < 0.3) {
+                _httt_log("Answer match thap | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score))
                 continue
             }
+            _httt_log("Answer matched | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score))
 
-            if _httt_click_answer(hwndElement, result.letter)
-                _httt_log("Đã trả lời " . result.letter . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
+            if _httt_click_answer(hwndElement, answerResult.letter)
+                _httt_log("Đã trả lời " . answerResult.letter . " | score=" . Format("{:.3f}", answerResult.score))
         }
     } finally {
         _feature_reset_running_status()
@@ -52,6 +76,40 @@ _feature_haitacthongthai() {
 
 _httt_read_question(hwnd) {
     return _ocr_from_bit_map(hwnd, 294, 190, 977, 340)
+}
+
+_httt_load_vocab_cache() {
+    global _httt_vocab_cache, _httt_vocab_loaded
+
+    if (_httt_vocab_loaded)
+        return
+    _httt_vocab_loaded := true
+
+    iniPath := A_ScriptDir . "\resources\Question.ini"
+    questionTokens := Map()
+    answerTokens := Map()
+
+    try {
+        allData := IniRead(iniPath, "Haitacthongthai")
+        Loop Parse, allData, "`n", "`r" {
+            if (A_LoopField = "")
+                continue
+            pos := InStr(A_LoopField, "=")
+            if (!pos)
+                continue
+            questionPart := Trim(SubStr(A_LoopField, 1, pos - 1))
+            answerPart := Trim(SubStr(A_LoopField, pos + 1))
+            for token in _httt_split_tokens_for_match(_httt_normalize_question_for_match(questionPart))
+                questionTokens[token] := true
+            for token in _httt_split_tokens_for_match(_httt_normalize(answerPart))
+                answerTokens[token] := true
+        }
+    }
+
+    _httt_vocab_cache["questionTokens"] := questionTokens
+    _httt_vocab_cache["answerTokens"] := answerTokens
+    _httt_vocab_cache["questionFixCache"] := Map()
+    _httt_vocab_cache["answerFixCache"] := Map()
 }
 
 _httt_get_option_config() {
@@ -68,15 +126,127 @@ _httt_get_confirm_button_config() {
     return { x: 907, y: 584 }
 }
 
-_httt_read_option_map(hwnd) {
+_httt_read_option_map(hwnd, bestMatchAnswer := "") {
     cfg := _httt_get_option_config()
     optionMap := Map()
+
     for letter in ["A", "B", "C", "D"] {
         opt := cfg[letter]
-        optionMap[letter] := _ocr_from_bit_map(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2)
+        optionMap[letter] := _ocr_from_bit_map(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2, 0, 2.5)
     }
+
     _httt_log("OCR options | A=[" . optionMap["A"] . "] B=[" . optionMap["B"] . "] C=[" . optionMap["C"] . "]" . "] D=[" . optionMap["D"] . "]")
     return optionMap
+}
+
+_httt_find_best_with_retry(iniPath, section, mappedText, rawText, threshold) {
+    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+
+    for _, currentThreshold in thresholdLevels {
+        result := _httt_fuzzy_match(iniPath, section, mappedText, currentThreshold)
+        if (result.Score > 0)
+            return result
+
+        if (Trim(rawText) != "") {
+            result := _httt_fuzzy_match(iniPath, section, rawText, currentThreshold)
+            if (result.Score > 0)
+                return result
+        }
+    }
+
+    return {Score: 0}
+}
+
+_httt_fuzzy_match(iniPath, section, searchStr, threshold) {
+    bestScore := 0
+    matchedQ := ""
+    matchedA := ""
+
+    searchNorm := _httt_normalize_question_for_match(searchStr)
+    if (searchNorm = "")
+        return {Score: 0}
+    searchCompact := StrReplace(searchNorm, " ", "")
+
+    try {
+        allData := IniRead(iniPath, section)
+    } catch {
+        return {Score: 0}
+    }
+
+    Loop Parse, allData, "`n", "`r" {
+        if (A_LoopField = "")
+            continue
+
+        pos := InStr(A_LoopField, "=")
+        if (!pos)
+            continue
+
+        fileQ := SubStr(A_LoopField, 1, pos - 1)
+        fileA := SubStr(A_LoopField, pos + 1)
+        fileNorm := _httt_normalize_question_for_match(fileQ)
+        fileCompact := StrReplace(fileNorm, " ", "")
+        charScore := _httt_str_diff(searchCompact, fileCompact)
+        tokenScore := _httt_question_token_overlap_score(searchNorm, fileNorm)
+        blendScore := (charScore * 0.65 + tokenScore * 0.35)
+        currentScore := Max(charScore, tokenScore, blendScore)
+
+        if (currentScore >= threshold && currentScore > bestScore) {
+            bestScore := currentScore
+            matchedQ := fileQ
+            matchedA := fileA
+        }
+    }
+
+    if (bestScore >= threshold)
+        return {Score: bestScore, Question: matchedQ, Answer: matchedA}
+    return {Score: 0}
+}
+
+_httt_find_best_answer_for_options(optionMap, bestMatchAnswer) {
+    global _httt_vocab_cache
+
+    expectedNorm := _httt_normalize(_httt_extract_answer_value(bestMatchAnswer))
+    if (expectedNorm = "")
+        return {letter: "", score: 0.0}
+
+    bestOption := ""
+    bestScore := 0.0
+    bestMatchedAnswer := bestMatchAnswer
+    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    letterPriority := {A: 3, B: 2, C: 1, D: 0}
+
+    for _, minThreshold in thresholdLevels {
+        for letter in ["A", "B", "C", "D"] {
+            if !optionMap.Has(letter)
+                continue
+
+            ocrText := optionMap[letter]
+            ocrParsed := _httt_extract_option_value(ocrText, letter)
+            ocrNorm := _httt_normalize(ocrParsed)
+            if (ocrNorm = "")
+                continue
+
+            if (_httt_vocab_cache.Has("answerTokens"))
+                ocrNorm := _httt_map_ocr_to_vocab(ocrNorm, _httt_vocab_cache["answerTokens"], _httt_vocab_cache["answerFixCache"])
+
+            rawScore := _httt_similarity_v2(expectedNorm, ocrNorm)
+            mappedScore := _httt_similarity_v2(expectedNorm, ocrNorm)
+            score := Max(rawScore, mappedScore)
+
+            if (score >= minThreshold) {
+                if (score > bestScore) || (score = bestScore && letterPriority[letter] < letterPriority[bestOption]) {
+                    bestScore := score
+                    bestOption := letter
+                    bestMatchedAnswer := ocrParsed
+                }
+            }
+        }
+
+        if (bestScore >= minThreshold)
+            break
+    }
+
+    return {letter: bestOption, score: bestScore, matchedAnswer: bestMatchedAnswer}
 }
 
 _httt_pick_answer(answerText, optionMap) {
@@ -169,6 +339,27 @@ _httt_similarity(a, b) {
     if (a = b)
         return 1.0
     return _httt_str_diff(a, b)
+}
+
+_httt_similarity_v2(expectedNorm, candidateNorm) {
+    numA := _httt_extract_number_token(expectedNorm)
+    numB := _httt_extract_number_token(candidateNorm)
+    if (numA != "" || numB != "") {
+        if (numA = numB && numA != "")
+            return 1.0
+        return 0.1
+    }
+
+    if (expectedNorm = candidateNorm)
+        return 1.0
+
+    if InStr(candidateNorm, expectedNorm) || InStr(expectedNorm, candidateNorm) {
+        minLen := Min(StrLen(expectedNorm), StrLen(candidateNorm))
+        maxLen := Max(StrLen(expectedNorm), StrLen(candidateNorm))
+        return 0.9 + (minLen / maxLen) * 0.1
+    }
+
+    return _httt_str_diff(expectedNorm, candidateNorm)
 }
 
 _httt_extract_number_token(text) {
@@ -316,6 +507,57 @@ _httt_split_tokens_for_match(text) {
         }
     }
     return tokens
+}
+
+_httt_map_ocr_to_vocab(ocrText, vocabSet, tokenFixCache := "") {
+    if (Trim(ocrText) = "")
+        return ""
+
+    normText := _httt_normalize_question_for_match(ocrText)
+    tokens := _httt_split_tokens_for_match(normText)
+    if (tokens.Length = 0)
+        return normText
+
+    result := ""
+    for token in tokens {
+        mappedToken := token
+
+        if (IsObject(vocabSet) && vocabSet.Has(token)) {
+            mappedToken := token
+        } else if (IsObject(tokenFixCache) && tokenFixCache.Has(token)) {
+            mappedToken := tokenFixCache[token]
+        } else {
+            bestMatch := ""
+            bestScore := 0.0
+            tokenLen := StrLen(token)
+
+            if IsObject(vocabSet) {
+                for vocabToken, _ in vocabSet {
+                    if (Abs(StrLen(vocabToken) - tokenLen) > 2)
+                        continue
+                    if (SubStr(vocabToken, 1, 1) != SubStr(token, 1, 1))
+                        continue
+
+                    score := _httt_str_diff(token, vocabToken)
+                    if (score > bestScore && score >= 0.8) {
+                        bestScore := score
+                        bestMatch := vocabToken
+                    }
+                }
+            }
+
+            if (bestMatch != "")
+                mappedToken := bestMatch
+
+            if IsObject(tokenFixCache)
+                tokenFixCache[token] := mappedToken
+        }
+
+        if (result != "")
+            result .= " "
+        result .= mappedToken
+    }
+    return result
 }
 
 _httt_array_has_token(arr, token) {
