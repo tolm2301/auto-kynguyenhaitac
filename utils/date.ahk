@@ -29,3 +29,10 @@ getHour() => SubStr(_get_gmt_7(), 12, 2)
 getMinute() => SubStr(_get_gmt_7(), 15, 2)
 getSecond() => SubStr(_get_gmt_7(), 18, 2)
 getMiliSecond() => SubStr(_get_gmt_7(), 21, 3)
+getDayOfTheWeekNumber() {
+    dt := SubStr(_get_gmt_7(), 1, 19)
+    dt := StrReplace(dt, "-", "")
+    dt := StrReplace(dt, ":", "")
+    dt := StrReplace(dt, "T", "")
+    return FormatTime(dt, "WDay")
+}

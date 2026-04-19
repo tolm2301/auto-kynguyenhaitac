@@ -58,15 +58,16 @@ _hoidap_load_vocab_cache()
 _httt_load_vocab_cache()
 
 F3:: {
-    _win_resize_game()
-    hwnd := _win_get_game()
-    _click_post(hwnd, 135, 177)
-    Sleep 500
-    _click_post(hwnd, 838, 520)
-    Sleep 500
-    _post_with_vk_string(hwnd, "Esc")
-    Sleep 500
-    _post_with_vk_string(hwnd, "Esc")
-    Sleep 500
-    _post_with_vk_string(hwnd, "Esc")
+    MsgBox getDayOfTheWeekNumber()
+    ; _win_resize_game()
+    ; hwnd := _win_get_game()
+    ; _click_post(hwnd, 135, 177)
+    ; Sleep 500
+    ; _click_post(hwnd, 838, 520)
+    ; Sleep 500
+    ; _post_with_vk_string(hwnd, "Esc")
+    ; Sleep 500
+    ; _post_with_vk_string(hwnd, "Esc")
+    ; Sleep 500
+    ; _post_with_vk_string(hwnd, "Esc")
 }

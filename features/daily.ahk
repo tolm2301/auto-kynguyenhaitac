@@ -50,30 +50,39 @@ _daily_init_runtime() {
 
 _daily_get_task_list() {
     tasks := []
-    tasks.Push(["che_do", _che_do])
-    tasks.Push(["anh_hon", _anh_hon])
-    tasks.Push(["all_blue", _all_blue])
-    tasks.Push(["imple_down", _imple_down])
-    tasks.Push(["dung_luyen", _dung_luyen])
-    tasks.Push(["vung_bien_than_bi", _vung_bien_than_bi])
-    tasks.Push(["haki", _haki])
-    tasks.Push(["nguyen_to", _nguyen_to])
-    tasks.Push(["tap_kick", _tap_kick])
-    tasks.Push(["tang_qua", _tang_qua])
-    tasks.Push(["bao_thach", _bao_thach])
-    tasks.Push(["tinh_ban", _tinh_ban])
-    tasks.Push(["ra_khoi", _ra_khoi])
-    tasks.Push(["linh_treo_thuong", _linh_treo_thuong])
-    tasks.Push(["dau_truong", _dau_truong])
-    tasks.Push(["huan_luyen", _huan_luyen])
-    tasks.Push(["nau_an", _nau_an])
-    tasks.Push(["tam_bao", _tam_bao])
-    tasks.Push(["boi_duong_tinh_linh", _boi_duong_tinh_linh])
-    tasks.Push(["nhan_thuong_linh_danh_thue", _nhan_thuong_linh_danh_thue])
-    tasks.Push(["dat_hang", _dat_hang])
-    tasks.Push(["linh_the_bai", _linh_the_bai])
-    tasks.Push(["cuong_hoa_tau_chien", _cuong_hoa_tau_chien])
-    tasks.Push(["nhan_hop_qua", _nhon_hop_qua])
+
+    if (getDayOfTheWeekNumber() = 7) {
+        tasks.Push(["huyet_chien_den_cung", huyet_chien_den_cung])
+        tasks.Push(["tan_cong_hai_quan", tan_cong_hai_quan])
+    }
+
+    tasks.Push(["che_do", _che_do])                         ;1
+    tasks.Push(["anh_hon", _anh_hon])                       ;2
+    tasks.Push(["all_blue", _all_blue])                     ;3
+    tasks.Push(["imple_down", _imple_down])                 ;4
+    tasks.Push(["dung_luyen", _dung_luyen])                 ;5
+    tasks.Push(["vung_bien_than_bi", _vung_bien_than_bi])   ;6
+    tasks.Push(["haki", _haki])                             ;7
+    tasks.Push(["nguyen_to", _nguyen_to])                   ;8
+    tasks.Push(["tap_kick", _tap_kick])                     ;9
+    tasks.Push(["tang_qua", _tang_qua])                     ;10
+    tasks.Push(["bao_thach", _bao_thach])                   ;11
+    tasks.Push(["tinh_ban", _tinh_ban])                     ;12
+    tasks.Push(["ra_khoi", _ra_khoi])                       ;13
+    tasks.Push(["linh_treo_thuong", _linh_treo_thuong])     ;14
+    tasks.Push(["dau_truong", _dau_truong])                 ;15
+    tasks.Push(["huan_luyen", _huan_luyen])                 ;16
+    tasks.Push(["nau_an", _nau_an])                         ;17
+    tasks.Push(["tam_bao", _tam_bao])                       ;18
+    tasks.Push(["boi_duong_tinh_linh", _boi_duong_tinh_linh])                       ;19
+    tasks.Push(["nhan_thuong_linh_danh_thue", _nhan_thuong_linh_danh_thue])         ;20
+    tasks.Push(["dat_hang", _dat_hang])                                             ;21
+    tasks.Push(["linh_the_bai", _linh_the_bai])                                     ;22
+    tasks.Push(["cuong_hoa_tau_chien", _cuong_hoa_tau_chien])                       ;23
+    tasks.Push(["cong_hoi", _cong_hien])                                            ;24
+    tasks.Push(["nhan_hop_qua", _nhan_hop_qua])                                     ;25
+    tasks.Push(["nha_xuong", _nha_xuong])                                        ;26
+
     return tasks
 }
 
@@ -295,7 +304,92 @@ _scroll_task(hwnd) {
     Sleep LOAD_SLEEP
 }
 
-_nhon_hop_qua(hwnd) {
+huyet_chien_den_cung(hwnd) {
+    ; go to tinh nag
+    _click_post(hwnd, 925, 35)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 1041, 125)
+    Sleep FEATURE_TASK_SLEEP
+
+    ; nhan thuong
+    _click_post(hwnd, 797, 529)
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ENTER")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_nha_xuong(hwnd) {
+     ; go to tinh nang
+    _click_post(hwnd, 925, 35)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 977, 195)
+    Sleep FEATURE_TASK_SLEEP
+
+    ; nhan thuong
+    _click_post(hwnd, 1071, 381)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 852, 2985)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1211, 51)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+tan_cong_hai_quan(hwnd) {
+    ; go to tinh nang
+    _click_post(hwnd, 925, 35)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 555, 195)
+    Sleep FEATURE_TASK_SLEEP
+
+    ; buy round
+    _click_post(hwnd, 630, 632)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 689, 331)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 576, 421)
+    Sleep LOAD_SLEEP
+
+    _click_post(hwnd, 1180, 31)
+    Sleep LOAD_SLEEP
+
+    count := 1
+    loop Integer(4) {
+        ; go to tinh nang
+        _click_post(hwnd, 925, 35)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 555, 195)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 756, 512)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 756, 512)
+        Sleep LOAD_SLEEP
+        _click_post(hwnd, 579, 359)
+        if (count = 1) {
+            Sleep FEATURE_TASK_SLEEP
+        } else {
+            Sleep LOAD_SLEEP
+        }
+        count := count + 1
+
+        _click_post(hwnd, 1230, 635)
+        Sleep LOAD_SLEEP
+        _post_with_vk_string(hwnd, "ENTER")
+        Sleep EXIT_FEATURE_SLEEP
+    }
+
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1180, 31)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+_nhan_hop_qua(hwnd) {
     _click_post(hwnd, 61, 365)
     Sleep FEATURE_TASK_SLEEP
 
@@ -366,7 +460,7 @@ _dau_truong(hwnd) {
     Sleep LOAD_SLEEP
     _click_post(hwnd, 763, 122)
     Sleep FEATURE_TASK_SLEEP
-    Loop Integer(5) {
+    Loop Integer(6) {
         _multi_click_post(hwnd, 759, 258, 15, 1000)
         _click_post(hwnd, 1013, 662)
         Sleep LOAD_SLEEP
@@ -522,16 +616,55 @@ _mua_chien_tich(hwnd) {
 }
 
 _cong_hien(hwnd) {
-    _click_post(hwnd, 61, 365)
+    ; go cong hoi
+    _click_post(hwnd, 1071, 597)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1036, 519)
     Sleep FEATURE_TASK_SLEEP
-    _click_post(hwnd, 876, 482)
+
+    ; start cong hien
+    _click_post(hwnd, 493, 119)
     Sleep LOAD_SLEEP
-    _click_post(hwnd, 497, 345)
+    _click_post(hwnd, 492, 336)
     Sleep LOAD_SLEEP
-    _click_post(hwnd, 711, 349)
+    _click_post(hwnd, 705, 344)
     Sleep LOAD_SLEEP
-    _click_post(hwnd, 590, 408)
+    _click_post(hwnd, 583, 397)
     Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+
+    ; go cong hoi
+    _click_post(hwnd, 1071, 597)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1036, 519)
+    Sleep FEATURE_TASK_SLEEP
+
+    ; start VNC
+    _click_post(hwnd, 656, 118)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 533, 498)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 467, 348, 5, LOAD_SLEEP)
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep LOAD_SLEEP
+    _post_with_vk_string(hwnd, "ESC")
+    Sleep EXIT_FEATURE_SLEEP
+
+    ; go cong hoi
+    _click_post(hwnd, 1071, 597)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 1036, 519)
+    Sleep FEATURE_TASK_SLEEP
+
+    ; start VNC
+    _click_post(hwnd, 731, 118)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 533, 498)
+    Sleep LOAD_SLEEP
+    _multi_click_post(hwnd, 467, 348, 5, LOAD_SLEEP)
     _post_with_vk_string(hwnd, "ESC")
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "ESC")
@@ -668,7 +801,7 @@ _anh_hon(hwnd) {
     _click_post(hwnd, 511, 623)
     Sleep LOAD_SLEEP
     _click_post(hwnd, 711, 387)
-    Sleep LOAD_SLEEP    
+    Sleep LOAD_SLEEP
     _click_post(hwnd, 623, 440)
     Sleep LOAD_SLEEP
     _post_with_vk_string(hwnd, "Enter")
