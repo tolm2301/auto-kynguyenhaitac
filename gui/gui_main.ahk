@@ -70,6 +70,7 @@ _gui_init() {
     btnAnhHon := myGui.AddButton("x30 y306 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Ảnh hồn")
     btnTanCongHaiQuan := myGui.AddButton("x30 y343 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Tấn công hải quân")
     btnHdTT := myGui.AddButton("x30 y380 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Hỏi đáp có thưởng")
+    btnDailyTaskAuto := myGui.AddButton("x30 y417 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "NV hàng ngày")
 
     myTab.UseTab(0)
 
@@ -85,6 +86,7 @@ _gui_init() {
     btnAnhHon.OnEvent("Click", (*) => _feature_anhhon(g_inputCount.Value))
     btnTanCongHaiQuan.OnEvent("Click", (*) => _feature_tanconghaiquan())
     btnHdTT.OnEvent("Click", (*) => _feature_hoidapcothuong())
+    btnDailyTaskAuto.OnEvent("Click", (*) => _feature_daily_task_auto())
 
     btnStop.OnEvent("Click", (*) => _feature_stop())
     btnTest.OnEvent("Click", (*) => _feature_test())

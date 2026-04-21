@@ -1,10 +1,10 @@
-_click_post(hwnd, x, y) {
+_click_post(hwnd, x, y, delay := 50) {
 
     lParam := (y << 16) | (x & 0xFFFF)
 
     ; WM_LBUTTONDOWN
     PostMessage 0x201, 1, lParam, , hwnd
-    Sleep 30
+    Sleep delay
     ; WM_LBUTTONUP
     PostMessage 0x202, 0, lParam, , hwnd
 }

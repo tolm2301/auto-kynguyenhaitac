@@ -116,11 +116,11 @@ _boss_run_punk_single(hwnd) {
     _click_post(hwnd, 729, 35)
     Sleep 3000
     _click_post(hwnd, 339, 200)
-    Sleep 1000
-    _click_post(hwnd, 893, 558)
     Sleep 2000
+    _click_post(hwnd, 893, 558)
+    Sleep 3000
     _click_post(hwnd, 680, 73)
-    Sleep 1000
+    Sleep 5000
     _multi_click_post(hwnd, 582, 145, 10)
     Sleep 1000
 
@@ -132,11 +132,11 @@ _boss_run_kraken_single(hwnd) {
     _click_post(hwnd, 729, 35)
     Sleep 3000
     _click_post(hwnd, 402, 259)
-    Sleep 1000
-    _click_post(hwnd, 893, 558)
     Sleep 2000
+    _click_post(hwnd, 893, 558)
+    Sleep 3000
     _click_post(hwnd, 680, 73)
-    Sleep 1000
+    Sleep 5000
     _multi_click_post(hwnd, 582, 145, 10)
     Sleep 1000
 

@@ -172,7 +172,7 @@ _ocr_from_bit_map(hwnd, x1, y1, x2, y2, ocrOptions := 0, scale := 2.0) {
         }
     }
 
-    result := OCR.FromBitmap(hbm, {lang: "en-US", scale: scale, grayscale: 1})
+    result := OCR.FromBitmap(hbm, {scale: scale, grayscale: 1})
     text := result.text
     text := RegExReplace(text, "[^\x20-\x7E]", "")
 

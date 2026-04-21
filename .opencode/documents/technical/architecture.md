@@ -16,6 +16,12 @@ Luồng chính ưu tiên:
 3. OCR + fuzzy matching cho Q&A
 4. Scheduler chạy event theo lịch (5s tick)
 
+## Related technical docs
+
+- `technical/daily-task-auto.md` - thiết kế nghiệp vụ/state machine cho Auto Nhiệm vụ hàng ngày
+- `technical/worker-architecture.md` - kiến trúc worker Daily/Boss
+- `technical/scheduler.md` - trigger feature theo lịch
+
 ---
 
 ## Module Diagram

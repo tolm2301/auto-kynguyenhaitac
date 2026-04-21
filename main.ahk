@@ -1,5 +1,4 @@
 #Requires AutoHotkey v2.0
-#SingleInstance Off
 #NoTrayIcon
 
 _log_startup_error(msg) {
@@ -30,6 +29,7 @@ _log_startup_error(msg) {
 #include features\haitacthongthai.ahk
 #include features\giftcode.ahk
 #include features\register_event.ahk
+#include features\daily_task_auto.ahk
 
 OnExit(_app_on_exit)
 
@@ -58,7 +58,8 @@ _hoidap_load_vocab_cache()
 _httt_load_vocab_cache()
 
 F3:: {
-    MsgBox getDayOfTheWeekNumber()
+    hwnds := _win_get_list()
+    _click_post(hwnds[1], 615, 508)
     ; _win_resize_game()
     ; hwnd := _win_get_game()
     ; _click_post(hwnd, 135, 177)
