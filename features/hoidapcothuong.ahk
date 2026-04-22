@@ -1,13 +1,20 @@
-; Cache vocabulary cho OCR post-processing
-global _hoidap_vocab_cache := Map()
-global _hoidap_vocab_loaded := false
-global _hoidap_fuzzy_retry_cache := Map()
+
+; variable
+global hoidap_quest_pos := [580, 146, 930, 190]
+
+_hoidap_get_option_config() {
+    static cfg := Map(
+        "A", { ocrX1: 622, ocrY1: 181, ocrX2: 888, ocrY2: 215, clickX: 633, clickY: 197 },
+        "B", { ocrX1: 622, ocrY1: 213, ocrX2: 888, ocrY2: 241, clickX: 636, clickY: 229 },
+        "C", { ocrX1: 622, ocrY1: 245, ocrX2: 815, ocrY2: 288, clickX: 636, clickY: 260 }
+    )
+    return cfg
+}
 
 _feature_hoidapcothuong() {
     global isRunning, g_featureText, g_ocr_debug_mode
 
     _hoidap_reset_log()
-    _hoidap_load_vocab_cache()
     g_ocr_debug_mode := false
 
     _win_resize_list()
@@ -27,38 +34,22 @@ _feature_hoidapcothuong() {
 }
 
 _hoidap_auto_answer(hwnd) {
-    global _hoidap_vocab_cache
-
     iniPath := A_ScriptDir . "\resources\Question.ini"
-    ; OCR retry theo scale tăng dần: 2.0 -> 2.25 -> 2.5
-    scaleLevels := [2.0, 2.25, 2.5]
-    questionText := ""
-    usedScale := ""
-    for idx, scl in scaleLevels {
-        questionText := _ocr_from_bit_map(hwnd, 580, 146, 930, 190, 0, scl)
-        questionText := _hoidap_clean_question_text(questionText)
-        if (Trim(questionText) != "") {
-            usedScale := scl
-            break
-        }
-    }
+
+    questionText := _ocr_from_bit_map(hwnd, hoidap_quest_pos[1], hoidap_quest_pos[2], hoidap_quest_pos[3], hoidap_quest_pos[4])
+    questionText := _hoidap_clean_question_text(questionText)
+
+    _hoidap_log("OCR Text=" . questionText)
 
     if (Trim(questionText) = "") {
         _hoidap_log("OCR câu hỏi rỗng")
         return
     }
-
-    _hoidap_log("OCR question retry done | scale=" . usedScale . " | text=" . questionText)
-
-    questionMapped := questionText
-    if (_hoidap_vocab_cache.Has("questionTokens"))
-        questionMapped := _hoidap_map_ocr_to_vocab(questionText, _hoidap_vocab_cache["questionTokens"], _hoidap_vocab_cache["questionFixCache"])
-
-    _hoidap_log("OCR question | raw=" . questionText . " | mapped=" . questionMapped)
-
-    bestMatch := _hoidap_find_best_with_retry(iniPath, questionMapped, questionText, 0.6)
+    
+    bestMatch := FindBestFuzzyMatchAcrossIni(iniPath, questionText)
+    
     if (bestMatch.Score <= 0) {
-        _hoidap_log("Không tìm thấy câu hỏi đủ match | mapped=" . questionMapped . " | raw=" . questionText)
+        _hoidap_log("Không tìm thấy câu hỏi đủ match | mapped=" . "questionMapped" . " | raw=" . questionText)
         return
     }
 
@@ -105,18 +96,8 @@ _hoidap_get_section() {
     return "Questions"
 }
 
-
-_hoidap_get_option_config() {
-    static cfg := Map(
-        "A", {ocrX1: 622, ocrY1: 181, ocrX2: 888, ocrY2: 215, clickX: 633, clickY: 197},
-        "B", {ocrX1: 622, ocrY1: 213, ocrX2: 888, ocrY2: 241, clickX: 636, clickY: 229},
-        "C", {ocrX1: 622, ocrY1: 245, ocrX2: 815, ocrY2: 288, clickX: 636, clickY: 260}
-    )
-    return cfg
-}
-
 _hoidap_get_confirm_button_config() {
-    return {x: 856, y: 284}
+    return { x: 856, y: 284 }
 }
 
 _hoidap_read_option_map(hwnd) {
@@ -131,49 +112,23 @@ _hoidap_read_option_map(hwnd) {
 }
 
 _hoidap_read_option_text_with_retry(hwnd, x1, y1, x2, y2) {
-    scaleLevels := [2.5, 2.75, 3.0]
-    bestText := ""
-    firstNonEmpty := ""
-
-    for idx, scl in scaleLevels {
-        text := Trim(_ocr_from_bit_map(hwnd, x1, y1, x2, y2, 0, scl))
-        if (text = "")
-            continue
-
-        if (firstNonEmpty = "")
-            firstNonEmpty := text
-
-        if (bestText = "")
-            bestText := text
-    }
-
-    if (bestText != "")
-        return bestText
-    return firstNonEmpty
+    text := Trim(_ocr_from_bit_map(hwnd, x1, y1, x2, y2))
+    return text
 }
 
 _hoidap_find_best_answer_for_options(optionMap, bestMatchAnswer) {
-    global _hoidap_vocab_cache
 
     expectedRaw := _extract_answer_value(bestMatchAnswer)
     expectedNorm := _normalize_qa_text(expectedRaw)
     if (expectedNorm = "")
-        return {letter: "", score: 0.0, matchedAnswer: "", matchedOcrText: ""}
+        return { letter: "", score: 0.0, matchedAnswer: "", matchedOcrText: "" }
 
     bestOption := ""
     bestScore := 0.0
-    bestRawScore := 0.0
-    bestMappedScore := 0.0
     bestMatchedAnswer := ""
     bestMatchedOcrText := ""
-
-    ; Thử với các ngưỡng: 0.8 -> 0.7 -> 0.6 -> 0.5 -> 0.4 -> 0.3
-    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-    ; Ưu tiên tie-break khi vẫn bằng điểm: C > B > A
-    letterPriority := Map("A", 1, "B", 2, "C", 3)
-
-    for _, minThreshold in thresholdLevels {
-        for letter in ["A", "B", "C"] {
+    
+    for letter in ["A", "B", "C"] {
             if !optionMap.Has(letter)
                 continue
 
@@ -183,53 +138,15 @@ _hoidap_find_best_answer_for_options(optionMap, bestMatchAnswer) {
             if (ocrNorm = "")
                 continue
 
-            ; 1) Score theo OCR nguyên bản (trước map)
             rawScore := _hoidap_similarity(expectedNorm, ocrNorm)
 
-            ; 2) Map OCR text qua vocab answer để fix lỗi OCR
-            mappedNorm := ocrNorm
-            if (_hoidap_vocab_cache.Has("answerTokens"))
-                mappedNorm := _hoidap_map_ocr_to_vocab(ocrNorm, _hoidap_vocab_cache["answerTokens"], _hoidap_vocab_cache["answerFixCache"])
-
-            ; 3) Score sau map
-            mappedScore := _hoidap_similarity(expectedNorm, mappedNorm)
-
-            ; Điểm chính vẫn là điểm cao hơn giữa raw/mapped
-            score := Max(rawScore, mappedScore)
-
-            ; Tiebreak theo yêu cầu:
-            ; - ưu tiên rawScore cao hơn
-            ; - nếu rawScore bằng, ưu tiên mappedScore cao hơn
-            ; - nếu vẫn bằng, ưu tiên C > B > A
-            isBetter := false
-            if (score > bestScore) {
-                isBetter := true
-            } else if (score = bestScore) {
-                if (rawScore > bestRawScore) {
-                    isBetter := true
-                } else if (rawScore = bestRawScore) {
-                    if (mappedScore > bestMappedScore) {
-                        isBetter := true
-                    } else if (mappedScore = bestMappedScore) {
-                        if (bestOption = "" || letterPriority[letter] > letterPriority[bestOption])
-                            isBetter := true
-                    }
-                }
-            }
-
-            if (score >= minThreshold && isBetter) {
-                bestScore := score
-                bestRawScore := rawScore
-                bestMappedScore := mappedScore
+            if (rawScore >= 0.8 && rawScore > bestScore) {
+                bestScore := rawScore
                 bestOption := letter
                 bestMatchedAnswer := ocrParsed
                 bestMatchedOcrText := ocrParsed
             }
         }
-
-        if (bestScore >= minThreshold)
-            break
-    }
 
     return {
         letter: bestOption,
@@ -246,7 +163,7 @@ _click_hoidap_answer(hwnd, answerLetter) {
         return false
 
     _click_post(hwnd, cfg[answerLetter].clickX, cfg[answerLetter].clickY)
-    Sleep 500
+    Sleep 200
     _click_post(hwnd, confirm.x, confirm.y)
     Sleep 500
     return true
@@ -354,13 +271,13 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.8) {
 
     searchNorm := _normalize_question_for_match(SearchStr)
     if (searchNorm = "")
-        return {Score: 0}
+        return { Score: 0 }
     searchCompact := StrReplace(searchNorm, " ", "")
 
     try {
         AllData := IniRead(IniPath, Section)
     } catch {
-        return {Score: 0}
+        return { Score: 0 }
     }
 
     Loop Parse, AllData, "`n", "`r" {
@@ -387,12 +304,12 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.8) {
     }
 
     if (BestScore >= Threshold)
-        return {Score: BestScore, Question: MatchedQ, Answer: MatchedA}
+        return { Score: BestScore, Question: MatchedQ, Answer: MatchedA }
 
-    return {Score: 0}
+    return { Score: 0 }
 }
 
-FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.8) {
+FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, section := "Questions" ,Threshold := 0.8) {
     BestScore := 0
     MatchedQ := ""
     MatchedA := ""
@@ -402,14 +319,15 @@ FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.8) {
 
     searchNorm := _normalize_question_for_match(SearchStr)
     if (searchNorm = "")
-        return {Score: 0}
+        return { Score: 0 }
     searchCompact := StrReplace(searchNorm, " ", "")
 
     if !FileExist(IniPath)
-        return {Score: 0}
+        return { Score: 0 }
 
     currentSection := ""
-    
+    inTargetSection := false
+
     loop read IniPath {
         row := Trim(A_LoopReadLine)
         if (row = "")
@@ -417,8 +335,12 @@ FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.8) {
 
         if RegExMatch(row, "^\[(.+)\]$", &mSec) {
             currentSection := Trim(mSec[1])
+            inTargetSection := (currentSection = section)
             continue
         }
+
+        if !inTargetSection
+            continue
 
         pos := InStr(row, "=")
         if !pos
@@ -459,260 +381,11 @@ FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, Threshold := 0.8) {
     }
 
     if (BestScore < Threshold)
-        return {Score: 0}
+        return { Score: 0 }
 
-    return {Score: BestScore, Question: MatchedQ, Answer: MatchedA, Section: MatchedSection}
+    return { Score: BestScore, Question: MatchedQ, Answer: MatchedA, Section: MatchedSection }
 }
 
-_hoidap_find_best_with_retry(iniPath, mappedText, rawText, threshold) {
-    global _hoidap_fuzzy_retry_cache
-
-    cacheKey := _normalize_question_for_match(mappedText) . "|" . _normalize_question_for_match(rawText) . "|" . threshold
-
-    if (_hoidap_fuzzy_retry_cache.Has(cacheKey))
-        return _hoidap_fuzzy_retry_cache[cacheKey]
-
-    ; Thử với nhiều ngưỡng: 0.8 -> 0.7 -> 0.6 -> 0.5 -> 0.4 -> 0.3
-    thresholdLevels := [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-
-    final := {Score: 0}
-
-    for _, currentThreshold in thresholdLevels {
-        if (Trim(mappedText) != "") {
-            result := _hoidap_fuzzy_match_cached(mappedText, currentThreshold)
-            if (result.Score > 0) {
-                _hoidap_fuzzy_retry_cache[cacheKey] := result
-                return result
-            }
-        }
-
-        if (Trim(rawText) != "") {
-            result := _hoidap_fuzzy_match_cached(rawText, currentThreshold)
-            if (result.Score > 0) {
-                _hoidap_fuzzy_retry_cache[cacheKey] := result
-                return result
-            }
-        }
-    }
-
-    _hoidap_fuzzy_retry_cache[cacheKey] := final
-    return final
-}
-
-_hoidap_load_vocab_cache() {
-    global _hoidap_vocab_loaded, _hoidap_vocab_cache
-
-    if (_hoidap_vocab_loaded)
-        return
-    _hoidap_vocab_loaded := true
-
-    iniPath := A_ScriptDir . "\resources\Question.ini"
-    if !FileExist(iniPath)
-        return
-
-    questionTokens := Map()
-    answerTokens := Map()
-    iniEntries := []
-
-    try {
-        allData := IniRead(iniPath, "Questions")
-    } catch {
-        return
-    }
-
-    Loop Parse, allData, "`n", "`r" {
-        if (A_LoopField = "")
-            continue
-
-        parsed := _hoidap_parse_qa_line(A_LoopField)
-        if !parsed.ok
-            continue
-
-        questionPart := parsed.question
-        answerPart := parsed.answer
-        qNorm := _normalize_question_for_match(questionPart)
-
-        for token in _split_tokens_for_match(qNorm)
-            questionTokens[token] := true
-
-        for token in _hoidap_tokenize_answer_for_vocab(answerPart)
-            answerTokens[token] := true
-
-        iniEntries.Push({q: questionPart, qNorm: qNorm, qCompact: StrReplace(qNorm, " ", ""), a: answerPart})
-    }
-
-    _hoidap_vocab_cache["questionTokens"] := questionTokens
-    _hoidap_vocab_cache["answerTokens"] := answerTokens
-    _hoidap_vocab_cache["iniEntries"] := iniEntries
-    _hoidap_vocab_cache["questionFixCache"] := Map()
-    _hoidap_vocab_cache["answerFixCache"] := Map()
-
-    _hoidap_log("Vocab cache loaded | questionTokens=" . questionTokens.Count . " | answerTokens=" . answerTokens.Count . " | iniEntries=" . iniEntries.Length)
-}
-
-_hoidap_fuzzy_match_cached(searchStr, threshold) {
-    global _hoidap_vocab_cache
-
-    if !_hoidap_vocab_cache.Has("iniEntries")
-        return {Score: 0}
-
-    entries := _hoidap_vocab_cache["iniEntries"]
-    if !entries || entries.Length = 0
-        return {Score: 0}
-
-    searchNorm := _normalize_question_for_match(searchStr)
-    if (searchNorm = "")
-        return {Score: 0}
-
-    searchCompact := StrReplace(searchNorm, " ", "")
-    searchTokens := _split_tokens_for_match(searchNorm)
-    if (searchTokens.Length = 0)
-        return {Score: 0}
-
-    bestScore := 0
-    bestQ := ""
-    bestA := ""
-
-    searchTokenSet := Map()
-    for token in searchTokens
-        searchTokenSet[token] := true
-
-    for entry in entries {
-        commonCount := 0
-        entryTokens := _split_tokens_for_match(entry.qNorm)
-        for token in entryTokens {
-            if searchTokenSet.Has(token)
-                commonCount++
-        }
-
-        if (commonCount < 2)
-            continue
-
-        charScore := StrDiff(searchCompact, entry.qCompact)
-        tokenScore := _question_token_overlap_score(searchNorm, entry.qNorm)
-        blendScore := (charScore * 0.65 + tokenScore * 0.35)
-        score := Max(charScore, tokenScore, blendScore)
-
-        if (score > bestScore) {
-            bestScore := score
-            bestQ := entry.q
-            bestA := entry.a
-        }
-
-        if (score >= 0.95)
-            break
-    }
-
-    if (bestScore >= threshold)
-        return {Score: bestScore, Question: bestQ, Answer: bestA, Section: _hoidap_get_section()}
-
-    return {Score: 0}
-}
-
-_hoidap_parse_qa_line(line) {
-    row := Trim(line)
-    if (row = "")
-        return {ok: false, question: "", answer: ""}
-
-    eqPos := InStr(row, "=")
-    if (eqPos) {
-        q := Trim(SubStr(row, 1, eqPos - 1))
-        a := Trim(SubStr(row, eqPos + 1))
-        if (q != "" && a != "")
-            return {ok: true, question: q, answer: a}
-    }
-
-    ; Fallback cho format kiểu: question: answer
-    if RegExMatch(row, "^(.*?):\s*(.+)$", &m) {
-        q := Trim(m[1])
-        a := Trim(m[2])
-        if (q != "" && a != "")
-            return {ok: true, question: q, answer: a}
-    }
-
-    return {ok: false, question: "", answer: ""}
-}
-
-_hoidap_tokenize_answer_for_vocab(answerText) {
-    tokens := []
-    t := StrLower(Trim(answerText))
-    if (t = "")
-        return tokens
-
-    ; Bỏ prefix A/B/C nếu có trong answer
-    t := RegExReplace(t, "^[abc]\s*[:\-\.)]\s*", "")
-
-    ; Đồng bộ sửa lỗi OCR phổ biến
-    t := RegExReplace(t, "(?<=[a-z])[06](?=[a-z])", "o")
-    t := RegExReplace(t, "(?<=[a-z])1(?=[a-z])", "i")
-    t := RegExReplace(t, "(?<=[a-z])5(?=[a-z])", "s")
-    t := RegExReplace(t, "(?<=[a-z])4(?=[a-z])", "a")
-
-    ; Tokenize trực tiếp từ raw answer, không cắt trước ký tự đặc biệt
-    i := 1
-    while (i <= StrLen(t)) {
-        if RegExMatch(SubStr(t, i), "^[a-z0-9]{3,}", &m) {
-            tokens.Push(m[0])
-            i += StrLen(m[0])
-        } else {
-            i += 1
-        }
-    }
-
-    return tokens
-}
-
-_hoidap_map_ocr_to_vocab(ocrText, vocabSet, tokenFixCache := "") {
-    if (Trim(ocrText) = "")
-        return ""
-
-    normText := _normalize_question_for_match(ocrText)
-    tokens := _split_tokens_for_match(normText)
-    if (tokens.Length = 0)
-        return normText
-
-    result := ""
-    for token in tokens {
-        mappedToken := token
-
-        if (IsObject(vocabSet) && vocabSet.Has(token)) {
-            mappedToken := token
-        } else if (IsObject(tokenFixCache) && tokenFixCache.Has(token)) {
-            mappedToken := tokenFixCache[token]
-        } else {
-            bestMatch := ""
-            bestScore := 0.0
-            tokenLen := StrLen(token)
-
-            if IsObject(vocabSet) {
-                for vocabToken, _ in vocabSet {
-                    if (Abs(StrLen(vocabToken) - tokenLen) > 2)
-                        continue
-                    if (SubStr(vocabToken, 1, 1) != SubStr(token, 1, 1))
-                        continue
-
-                    score := StrDiff(token, vocabToken)
-                    if (score > bestScore && score >= 0.8) {
-                        bestScore := score
-                        bestMatch := vocabToken
-                    }
-                }
-            }
-
-            if (bestMatch != "")
-                mappedToken := bestMatch
-
-            if IsObject(tokenFixCache)
-                tokenFixCache[token] := mappedToken
-        }
-
-        if (result != "")
-            result .= " "
-        result .= mappedToken
-    }
-
-    return Trim(result)
-}
 
 _hoidap_insert_candidate_sorted(candidates, candidate) {
     if (candidates.Length = 0) {
