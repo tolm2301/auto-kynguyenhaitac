@@ -219,7 +219,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
         MsgBox questOCRText
 
     if (questOCRText != "") {
-        match1 := FindBestQuestTaskSupportNVHN(questTaskMap, questOCRText, 0.4)
+        match1 := FindBestQuestTaskSupportNVHN(questTaskMap, questOCRText, 0.8)
         if (match1.Score > bestMatch.Score)
             bestMatch := match1
     }
@@ -234,7 +234,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match2 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.4)
+            match2 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
             if (match2.Score > bestMatch.Score)
                 bestMatch := match2
         }
@@ -250,7 +250,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.4)
+            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
             if (match3.Score > bestMatch.Score)
                 bestMatch := match3
         }
@@ -266,7 +266,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.4)
+            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
             if (match3.Score > bestMatch.Score)
                 bestMatch := match3
         }
@@ -433,7 +433,7 @@ _normalize_qa_text_support_nvhn(text) {
     return value
 }
 
-FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.4) {
+FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.8) {
     bestScore := 0
     bestQuest := ""
     bestTask := ""
@@ -474,7 +474,7 @@ FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.4) {
     }
 }
 
-StringSupportFindingScoreAndReturnBoolean(mainChar, charFinding, threshold := 0.4) {
+StringSupportFindingScoreAndReturnBoolean(mainChar, charFinding, threshold := 0.8) {
     mainNorm := _normalize_qa_text_support_nvhn(mainChar)
     findNorm := _normalize_qa_text_support_nvhn(charFinding)
 
@@ -562,7 +562,7 @@ _ocr_check_is_quest_needed(hwnd, taskArr, pendingTasks) {
         if (taskTarget = "")
             continue
 
-        if (StringSupportFindingScoreAndReturnBoolean(taskTarget, result, 0.4) = "OK")
+        if (StringSupportFindingScoreAndReturnBoolean(taskTarget, result, 0.8) = "OK")
             return idx
     }
 
