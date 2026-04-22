@@ -1,7 +1,7 @@
 ---
 description: Implements AHK2 automation features as a subagent
 mode: subagent
-model: openai/gpt-5.4-mini-fast
+model: openai/gpt-5.3-codex
 temperature: 0.1
 tools:
   write: true

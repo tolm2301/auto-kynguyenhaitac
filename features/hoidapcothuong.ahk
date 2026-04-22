@@ -56,7 +56,7 @@ _hoidap_auto_answer(hwnd) {
 
     _hoidap_log("OCR question | raw=" . questionText . " | mapped=" . questionMapped)
 
-    bestMatch := _hoidap_find_best_with_retry(iniPath, questionMapped, questionText, 0.8)
+    bestMatch := _hoidap_find_best_with_retry(iniPath, questionMapped, questionText, 0.6)
     if (bestMatch.Score <= 0) {
         _hoidap_log("Không tìm thấy câu hỏi đủ match | mapped=" . questionMapped . " | raw=" . questionText)
         return
@@ -468,6 +468,7 @@ _hoidap_find_best_with_retry(iniPath, mappedText, rawText, threshold) {
     global _hoidap_fuzzy_retry_cache
 
     cacheKey := _normalize_question_for_match(mappedText) . "|" . _normalize_question_for_match(rawText) . "|" . threshold
+
     if (_hoidap_fuzzy_retry_cache.Has(cacheKey))
         return _hoidap_fuzzy_retry_cache[cacheKey]
 

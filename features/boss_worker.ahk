@@ -2,7 +2,7 @@
 #SingleInstance Off
 #NoTrayIcon
 
-#include ..\utils\OCR.ahk
+#include ..\utils\paddle_ocr.ahk
 #include ..\utils\date.ahk
 #include ..\utils\post_message.ahk
 #include ..\utils\log_file.ahk

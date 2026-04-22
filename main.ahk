@@ -9,11 +9,11 @@ _log_startup_error(msg) {
 
 #Include gui\gui_main.ahk
 
+#include utils\paddle_ocr.ahk
 #include utils\window.ahk
 #include utils\post_message.ahk
 #include utils\date.ahk
 #include utils\log_file.ahk
-#include utils\OCR.ahk
 #include utils\scheduler.ahk
 
 #include features\enhance.ahk
@@ -51,11 +51,11 @@ if (A_Args.Length >= 3 and A_Args[1] = "--boss-worker") {
     ExitApp()
 }
 
-_gui_init()
 
 ; Pre-load vocab cache for Q&A features
 _hoidap_load_vocab_cache()
 _httt_load_vocab_cache()
+_gui_init()
 
 F3:: {
     hwnds := _win_get_list()
