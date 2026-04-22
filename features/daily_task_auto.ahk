@@ -112,15 +112,9 @@ _feature_daily_task_auto_single(hwnd) {
             }
 
             if (_find_and_accept_any_zero_point_task(hwnd) = "OK") {
-                _click_post(hwnd, acceptQuest[1], acceptQuest[2], 500)
+                _click_post(hwnd, acceptQuest[1], acceptQuest[2])
                 Sleep SLEEP_SHORT
-                _click_post(hwnd, completedQuest[1], completedQuest[2], 500)
-                Sleep 500
-                _click_post(hwnd, completedQuest2[1], completedQuest2[2], 500)
-                Sleep 500
-                _click_post(hwnd, completedQuest3[1], completedQuest3[2], 500)
-                Sleep 500
-                _click_post(hwnd, completedQuest4[1], completedQuest4[2], 500)
+                _click_post(hwnd, completedQuest[1], completedQuest[2])
                 Sleep SLEEP_SHORT
             }
             continue
@@ -219,7 +213,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
         MsgBox questOCRText
 
     if (questOCRText != "") {
-        match1 := FindBestQuestTaskSupportNVHN(questTaskMap, questOCRText, 0.8)
+        match1 := FindBestQuestTaskSupportNVHN(questTaskMap, questOCRText, 0.6)
         if (match1.Score > bestMatch.Score)
             bestMatch := match1
     }
@@ -234,7 +228,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match2 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
+            match2 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.6)
             if (match2.Score > bestMatch.Score)
                 bestMatch := match2
         }
@@ -250,7 +244,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
+            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.6)
             if (match3.Score > bestMatch.Score)
                 bestMatch := match3
         }
@@ -266,7 +260,7 @@ _find_best_match_score(hwnd, region, retryRegion, retryRegion2, retryRegion3, sc
             MsgBox retryText
 
         if (retryText != "") {
-            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.8)
+            match3 := FindBestQuestTaskSupportNVHN(questTaskMap, retryText, 0.6)
             if (match3.Score > bestMatch.Score)
                 bestMatch := match3
         }
@@ -433,7 +427,7 @@ _normalize_qa_text_support_nvhn(text) {
     return value
 }
 
-FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.8) {
+FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.6) {
     bestScore := 0
     bestQuest := ""
     bestTask := ""
@@ -474,7 +468,7 @@ FindBestQuestTaskSupportNVHN(arrData, searchStr, threshold := 0.8) {
     }
 }
 
-StringSupportFindingScoreAndReturnBoolean(mainChar, charFinding, threshold := 0.8) {
+StringSupportFindingScoreAndReturnBoolean(mainChar, charFinding, threshold := 0.6) {
     mainNorm := _normalize_qa_text_support_nvhn(mainChar)
     findNorm := _normalize_qa_text_support_nvhn(charFinding)
 
@@ -562,7 +556,7 @@ _ocr_check_is_quest_needed(hwnd, taskArr, pendingTasks) {
         if (taskTarget = "")
             continue
 
-        if (StringSupportFindingScoreAndReturnBoolean(taskTarget, result, 0.8) = "OK")
+        if (StringSupportFindingScoreAndReturnBoolean(taskTarget, result, 0.6) = "OK")
             return idx
     }
 
