@@ -55,10 +55,29 @@ function Invoke-Tool {
     }
 }
 
+function Build-AhkExe {
+    param(
+        [string]$Source,
+        [string]$Output,
+        [string]$BaseExe,
+        [string]$IconPath = $null,
+        [string]$Label = 'Ahk2Exe'
+    )
+
+    $buildArgs = @('/in', $Source, '/out', $Output, '/bin', $BaseExe)
+    if ($IconPath) {
+        $buildArgs += @('/icon', $IconPath)
+    }
+
+    Invoke-Tool -Command $ahk2Exe -Arguments $buildArgs -Label $Label
+}
+
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $releaseRoot = Join-Path $root 'release\kynguyenhaitac-auto'
 $resourcesSrc = Join-Path $root 'resources'
 $mainSource = Join-Path $root 'main.ahk'
+$dailyWorkerSource = Join-Path $root 'features\daily_worker.ahk'
+$bossWorkerSource = Join-Path $root 'features\boss_worker.ahk'
 $workerSource = Join-Path $root 'tools\ocr_worker.py'
 $workerBuildRoot = Join-Path $root '.build\ocr_worker'
 $ahkBaseCandidates = @(
@@ -79,6 +98,8 @@ if (Test-Path $workerBuildRoot) {
 New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
 
 if (-not (Test-Path $mainSource)) { throw "Thiếu main.ahk" }
+if (-not (Test-Path $dailyWorkerSource)) { throw "Thiếu features\daily_worker.ahk" }
+if (-not (Test-Path $bossWorkerSource)) { throw "Thiếu features\boss_worker.ahk" }
 if (-not (Test-Path $workerSource)) { throw "Thiếu tools\ocr_worker.py" }
 if (-not (Test-Path $resourcesSrc)) { throw "Thiếu thư mục resources" }
 $iconPath = Join-Path $resourcesSrc 'icon.ico'
@@ -135,15 +156,18 @@ $ahkBase = Resolve-ToolCommand `
 Write-Step "release -> $releaseRoot"
 
 $mainOut = Join-Path $releaseRoot 'kynguyenhaitac-auto.exe'
+$dailyWorkerOut = Join-Path $releaseRoot 'daily_worker.exe'
+$bossWorkerOut = Join-Path $releaseRoot 'boss_worker.exe'
 $workerOut = Join-Path $releaseRoot 'ocr_worker.exe'
 
 Write-Step "build main exe"
-Invoke-Tool -Command $ahk2Exe -Arguments @(
-    '/in', $mainSource,
-    '/out', $mainOut,
-    '/icon', $iconPath,
-    '/bin', $ahkBase
-) -Label 'Ahk2Exe'
+Build-AhkExe -Source $mainSource -Output $mainOut -BaseExe $ahkBase -IconPath $iconPath -Label 'Ahk2Exe main'
+
+Write-Step "build daily worker exe"
+Build-AhkExe -Source $dailyWorkerSource -Output $dailyWorkerOut -BaseExe $ahkBase -Label 'Ahk2Exe daily worker'
+
+Write-Step "build boss worker exe"
+Build-AhkExe -Source $bossWorkerSource -Output $bossWorkerOut -BaseExe $ahkBase -Label 'Ahk2Exe boss worker'
 
 Write-Step "build OCR worker exe"
 New-Item -ItemType Directory -Force -Path $workerBuildRoot | Out-Null
@@ -191,6 +215,8 @@ $readmeText = @(
     ''
     'Files:'
     '- kynguyenhaitac-auto.exe'
+    '- daily_worker.exe'
+    '- boss_worker.exe'
     '- ocr_worker.exe'
     '- resources\'
     ''
