@@ -37,6 +37,36 @@ _ocr_worker_init() {
     return g_ocr_worker_state
 }
 
+_ocr_worker_cleanup_stale_runtime(state) {
+    if !IsObject(state)
+        return
+
+    readyPath := state["readyFilePath"]
+    if FileExist(readyPath) {
+        try {
+            readyText := FileRead(readyPath, "UTF-8")
+            if InStr(readyText, "READY=1") and RegExMatch(readyText, "m)^PID=(\d+)$", &pidMatch) {
+                pid := Integer(pidMatch[1])
+                if ProcessExist(pid)
+                    return
+            }
+        } catch {
+        }
+    }
+
+    try FileDelete(readyPath)
+    _ocr_worker_delete_files(state["requestDir"] . "\req_*.req")
+    _ocr_worker_delete_files(state["requestDir"] . "\req_*.tmp")
+    _ocr_worker_delete_files(state["responseDir"] . "\resp_*.resp")
+    _ocr_worker_delete_files(state["ipcDir"] . "\img_*.png")
+}
+
+_ocr_worker_delete_files(pattern) {
+    Loop Files pattern, "F" {
+        try FileDelete(A_LoopFileFullPath)
+    }
+}
+
 _ocr_worker_prepare_runtime_dirs(state := 0) {
     if !IsObject(state)
         state := _ocr_worker_init()

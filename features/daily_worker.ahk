@@ -8,6 +8,8 @@
 #include ..\utils\log_file.ahk
 #include ..\utils\window.ahk
 #Include daily.ahk
+#Include daily_task_auto.ahk
+#Include hoidapcothuong.ahk
 
 global g_featureText := {text: ""}
 

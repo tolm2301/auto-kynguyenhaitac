@@ -52,6 +52,8 @@ if (A_Args.Length >= 3 and A_Args[1] = "--boss-worker") {
 }
 
 
+_ocr_worker_cleanup_stale_runtime(_ocr_worker_init())
+
 ; Pre-load vocab cache for Q&A features
 
 _gui_init()

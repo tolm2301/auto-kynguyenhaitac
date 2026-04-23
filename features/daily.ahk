@@ -82,6 +82,7 @@ _daily_get_task_list() {
     tasks.Push(["cong_hoi", _cong_hien])                                            ;24
     tasks.Push(["nhan_hop_qua", _nhan_hop_qua])                                     ;25
     tasks.Push(["nha_xuong", _nha_xuong])                                        ;26
+    tasks.Push(["daily_task_auto", _feature_daily_task_auto_run])                  ;27
 
     return tasks
 }

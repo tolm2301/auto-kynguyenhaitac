@@ -68,22 +68,19 @@ _feature_daily_task_auto() {
     if (hwnds.Length = 0)
         return
 
-    hwnd := hwnds[1]
-    isRunning := true
-    g_featureText.Text := "Tính năng đang chạy: NV hàng ngày"
-
-    _feature_daily_task_auto_single(hwnd)
+    _feature_daily_task_auto_run(hwnds[1])
 }
 
-_feature_daily_task_auto_single(hwnd) {
+_feature_daily_task_auto_run(hwnd) {
     global g_featureText, isRunning
+
+    isRunning := true
+    g_featureText.Text := "Tính năng đang chạy: NV hàng ngày"
 
     _click_post(hwnd, featureButton[1], featureButton[2])
     Sleep SLEEP_SHORT
     _click_post(hwnd, dailyTabButton[1], dailyTabButton[2])
     Sleep SLEEP_SHORT
-
-    isRunning := true
 
     while true {
         if (!isRunning) {
