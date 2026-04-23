@@ -1,12 +1,13 @@
 ---
 description: Implements AHK2 automation features as a subagent
 mode: subagent
-model: openai/gpt-5.3-codex
-temperature: 0.1
+model: openai/gpt-5.4-mini-fast
 tools:
   write: true
   edit: true
   bash: true
+permission:
+  "*": allow
 ---
 
 # AGENT - AutoHotkey2 Developer

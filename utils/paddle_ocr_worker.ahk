@@ -8,13 +8,15 @@ _ocr_worker_init() {
     if IsObject(g_ocr_worker_state)
         return g_ocr_worker_state
 
-    pythonExe := EnvGet("OCR_WORKER_PYTHON")
+    pythonExe := Trim(EnvGet("OCR_WORKER_PYTHON"))
     if (pythonExe = "")
         pythonExe := "python"
 
     state := Map()
     state["pythonExe"] := pythonExe
-    state["workerScriptPath"] := A_ScriptDir . "\tools\ocr_worker.py"
+    state["workerExePath"] := _ocr_worker_resolve_worker_exe_path()
+    state["workerScriptPath"] := _ocr_worker_resolve_worker_script_path()
+    state["workerMode"] := (state["workerExePath"] != "") ? "exe" : "python"
     state["ipcDir"] := A_Temp . "\auto_kynguyenhaitac_ocr"
     state["requestDir"] := state["ipcDir"] . "\requests"
     state["responseDir"] := state["ipcDir"] . "\responses"
@@ -26,7 +28,7 @@ _ocr_worker_init() {
     state["keepTempFiles"] := false
     state["workerPid"] := 0
     state["logFilePath"] := A_ScriptDir . "\logs\ocr_worker.log"
-    state["pythonLogPath"] := A_ScriptDir . "\logs\ocr_worker_py.log"
+    state["workerLogPath"] := A_ScriptDir . "\logs\ocr_worker_py.log"
     state["lastStartCommand"] := ""
     state["lastError"] := ""
 
@@ -113,22 +115,26 @@ _ocr_worker_start_background(state := 0) {
     if !IsObject(state)
         state := _ocr_worker_init()
 
-    if !FileExist(state["workerScriptPath"]) {
-        state["lastError"] := "Worker script not found: " . state["workerScriptPath"]
-        _ocr_worker_trace("ERROR", "StartBackground missingScript", Map("path", state["workerScriptPath"]))
+    command := _ocr_worker_build_start_command(state)
+    if (command = "") {
+        state["lastError"] := "OCR worker runtime not found"
+        _ocr_worker_trace("ERROR", "StartBackground missingRuntime", Map(
+            "workerExePath", state["workerExePath"],
+            "workerScriptPath", state["workerScriptPath"],
+            "pythonExe", state["pythonExe"]
+        ))
         return false
     }
 
     readyPath := state["readyFilePath"]
     try FileDelete(readyPath)
 
-    command := Format('"{1}" "{2}" --server --ipc-dir "{3}" --ready-file "{4}" --log-file "{5}" --lang "{6}"'
-        , state["pythonExe"], state["workerScriptPath"], state["ipcDir"], readyPath, state["pythonLogPath"], state["lang"])
     state["lastStartCommand"] := command
 
     _ocr_worker_trace("INFO", "StartBackground command", Map(
         "command", command,
-        "pythonExe", state["pythonExe"],
+        "workerMode", state["workerMode"],
+        "workerExePath", state["workerExePath"],
         "workerScriptPath", state["workerScriptPath"],
         "ipcDir", state["ipcDir"]
     ))
@@ -247,6 +253,22 @@ _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
     return result
 }
 
+_ocr_worker_build_start_command(state) {
+    if !IsObject(state)
+        return ""
+
+    if (state["workerMode"] = "exe" and state["workerExePath"] != "") {
+        return Format('"{1}" --server --ipc-dir "{2}" --ready-file "{3}" --log-file "{4}" --lang "{5}"'
+            , state["workerExePath"], state["ipcDir"], state["readyFilePath"], state["workerLogPath"], state["lang"])
+    }
+
+    if (state["workerScriptPath"] = "")
+        return ""
+
+    return Format('"{1}" "{2}" --server --ipc-dir "{3}" --ready-file "{4}" --log-file "{5}" --lang "{6}"'
+        , state["pythonExe"], state["workerScriptPath"], state["ipcDir"], state["readyFilePath"], state["workerLogPath"], state["lang"])
+}
+
 _ocr_worker_wait_response(respPath, timeoutMs, pollIntervalMs) {
     startedAt := A_TickCount
     while ((A_TickCount - startedAt) <= timeoutMs) {
@@ -312,6 +334,41 @@ _ocr_worker_extract_block(rawText, startMarker, endMarker) {
 
 _ocr_worker_build_request_id() {
     return Format("{1}_{2}_{3}", A_NowUTC, A_TickCount, Random(10000, 99999))
+}
+
+_ocr_worker_resolve_worker_exe_path() {
+    candidates := []
+    candidates.Push(A_ScriptDir . "\ocr_worker.exe")
+    envPath := Trim(EnvGet("OCR_WORKER_EXE"))
+    if (envPath != "")
+        candidates.Push(envPath)
+    candidates.Push(A_ScriptDir . "\tools\ocr_worker.exe")
+    return _ocr_worker_first_existing_file(candidates)
+}
+
+_ocr_worker_resolve_worker_script_path() {
+    candidates := []
+    candidates.Push(A_ScriptDir . "\tools\ocr_worker.py")
+    envPath := Trim(EnvGet("OCR_WORKER_SCRIPT"))
+    if (envPath != "")
+        candidates.Push(envPath)
+    candidates.Push(A_ScriptDir . "\ocr_worker.py")
+    return _ocr_worker_first_existing_file(candidates)
+}
+
+_ocr_worker_first_existing_file(candidates) {
+    if !IsObject(candidates)
+        return ""
+
+    for _, candidate in candidates {
+        path := Trim(candidate)
+        if (path = "")
+            continue
+        if FileExist(path) and !DirExist(path)
+            return path
+    }
+
+    return ""
 }
 
 _ocr_worker_trace(level, message, details := "", debugContext := 0) {
