@@ -17,13 +17,13 @@ global dragToClick := [724, 494, 674, 495]
 global isMsgBox := false
 global isMsgBox1 := false
 
-global questTaskMap := [{ quest: "timkiem", task: "hoanthanhthaotactimkiemdaquydaquycothelamtangsucmanhcobancuatrangbi" }, { quest: "tangtocddoi", task: "tienhanhtangtocddoicuabancothetangcapchodoidoi" }, { quest: "tancongdoiquan", task: "tancongnpctrongpbandanhbainpcnhanctichvatrangbi" }, { quest: "cuonghoatrangbi", task: "chonchoatrangbitronggiaodienchoacuonghoasetangkhanangcosocuatrangbi" }, { quest: "thachthuctrendautruong", task: "haythachdauvoinhungnguoichoikhactrendautruongdechungminhthucluccuaban" }, { quest: "tayluyen", task: "thongquatayluyentbihoacbauvatcothegiuptbihoacbauvatnhanduochoacthaydoicac" }, { quest: "dungvang", task: "tieuvangmotcachthongminhcothesenhanduochieuquacapsonhan" }, { quest: "rakhoi", task: "hoanthanhthaotacrakhoitronggiaodiencuatauchinhkhirakhoicothenhanduocphanthuongberi" }, { quest: "nauan", task: "nauanbanmonannhanberiberi" }
+global questTaskMap := [{ quest: "timkiem", task: "hoanthanhthaotactimkiemdaquydaquycothelamtangsucmanhcobancuatrangbi" }, { quest: "tangtocddoi", task: "tienhanhtangtocddoicuabancothetangcapchodoidoi" }, { quest: "tancongdoiquan", task: "tancongnpctrongphuban,tancongnpccothenhanduocctichvatrangbi." }, { quest: "cuonghoatrangbi", task: "chonchoatrangbitronggiaodienchoacuonghoasetangkhanangcosocuatrangbi" }, { quest: "thachthuctrendautruong", task: "haythachdauvoinhungnguoichoikhactrendautruongdechungminhthucluccuaban" }, { quest: "tayluyen", task: "thongquatayluyentbihoacbauvatcothegiuptbihoacbauvatnhanduochoacthaydoicac" }, { quest: "dungvang", task: "tieuvangmotcachthongminhcothesenhanduochieuquacapsonhan" }, { quest: "rakhoi", task: "hoanthanhthaotacrakhoitronggiaodiencuatauchinhkhirakhoicothenhanduocphanthuongberi" }, { quest: "nauan", task: "nauanbanmonannhanberiberi" }
 ]
 
 global noticeText := "datontainvpchatcaophuhopvoimuctieucotieptuclammoiko"
 
 ; Quest
-global quest1 := [438, 198, 441, 211, 559, 255]
+global quest1 := [438, 198, 441, 211, 588, 267]
 global quest1Retry1 := [438, 198, 480, 239, 570, 268]
 global quest1Retry2 := [438, 198, 476, 242, 528, 264]
 global quest1Retry3 := [438, 198, 485, 244, 634, 269]
@@ -32,7 +32,7 @@ global quest2Retry1 := [389, 261, 431, 307, 527, 327]
 global quest2Retry2 := [389, 261, 431, 307, 527, 327]
 global quest2Retry3 := [389, 261, 431, 307, 527, 327]
 global quest3 := [485, 264, 491, 276, 648, 334]
-global quest3Retry1 := [485, 264, 522, 303, 570, 268]
+global quest3Retry1 := [485, 264, 528, 302, 644, 340]
 global quest3Retry2 := [485, 264, 527, 304, 638, 341]
 global quest3Retry3 := [485, 264, 521, 297, 653, 349]
 global questRegions := [quest1, quest2, quest3]
@@ -58,7 +58,7 @@ global checkPoint := [364, 495, 431, 513]
 
 ; Sleep
 global SLEEP_SHORT := 1000
-global SLEEP_LONG := 5000
+global SLEEP_LONG := 4000
 
 _feature_daily_task_auto() {
     global isRunning, g_featureText
@@ -68,22 +68,19 @@ _feature_daily_task_auto() {
     if (hwnds.Length = 0)
         return
 
-    hwnd := hwnds[1]
-    isRunning := true
-    g_featureText.Text := "Tính năng đang chạy: NV hàng ngày"
-
-    _feature_daily_task_auto_single(hwnd)
+    _feature_daily_task_auto_run(hwnds[1])
 }
 
-_feature_daily_task_auto_single(hwnd) {
+_feature_daily_task_auto_run(hwnd) {
     global g_featureText, isRunning
+
+    isRunning := true
+    g_featureText.Text := "Tính năng đang chạy: NV hàng ngày"
 
     _click_post(hwnd, featureButton[1], featureButton[2])
     Sleep SLEEP_SHORT
     _click_post(hwnd, dailyTabButton[1], dailyTabButton[2])
     Sleep SLEEP_SHORT
-
-    isRunning := true
 
     while true {
         if (!isRunning) {

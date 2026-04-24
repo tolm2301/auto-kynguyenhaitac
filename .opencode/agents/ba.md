@@ -2,7 +2,6 @@
 description: Analyses screenshots and writes business workflow docs for the auto project
 mode: subagent
 model: openai/gpt-5.4-mini-fast
-temperature: 0.1
 tools:
   read: true
   write: true

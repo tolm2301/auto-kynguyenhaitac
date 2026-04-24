@@ -54,7 +54,11 @@ _boss_start_worker(mode, hwnd) {
     pid := 0
 
     if A_IsCompiled {
-        runCommand := Format('"{1}" --boss-worker "{2}" "{3}"', A_ScriptFullPath, mode, hwnd)
+        workerExe := _boss_resolve_worker_exe()
+        if (workerExe = "")
+            return 0
+
+        runCommand := Format('"{1}" "{2}" "{3}"', workerExe, mode, hwnd)
         try Run(runCommand, A_ScriptDir, "Hide", &pid)
         return pid
     }
@@ -66,6 +70,19 @@ _boss_start_worker(mode, hwnd) {
     runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_AhkPath, workerScript, mode, hwnd)
     try Run(runCommand, A_ScriptDir, "Hide", &pid)
     return pid
+}
+
+_boss_resolve_worker_exe() {
+    candidates := []
+    candidates.Push(A_ScriptDir . "\boss_worker.exe")
+    candidates.Push(A_ScriptDir . "\features\boss_worker.exe")
+
+    for candidate in candidates {
+        if FileExist(candidate)
+            return candidate
+    }
+
+    return ""
 }
 
 _boss_wait_workers(pids) {

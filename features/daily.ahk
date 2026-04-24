@@ -86,6 +86,7 @@ _daily_get_task_list() {
     tasks.Push(["cong_hoi", _cong_hien])                                            ;24
     tasks.Push(["nhan_hop_qua", _nhan_hop_qua])                                     ;25
     tasks.Push(["nha_xuong", _nha_xuong])                                        ;26
+    tasks.Push(["daily_task_auto", _feature_daily_task_auto_run])                  ;27
 
     return tasks
 }
@@ -256,7 +257,11 @@ _daily_start_worker(hwnd, stopFile) {
     pid := 0
 
     if A_IsCompiled {
-        runCommand := Format('"{1}" --daily-worker "{2}" "{3}"', A_ScriptFullPath, hwnd, stopFile)
+        workerExe := _daily_resolve_worker_exe()
+        if (workerExe = "")
+            return 0
+
+        runCommand := Format('"{1}" "{2}" "{3}"', workerExe, hwnd, stopFile)
         try Run(runCommand, _daily_get_base_dir(), "Hide", &pid)
         return pid
     }
@@ -270,6 +275,19 @@ _daily_start_worker(hwnd, stopFile) {
     try Run(runCommand, baseDir, "Hide", &pid)
 
     return pid
+}
+
+_daily_resolve_worker_exe() {
+    candidates := []
+    candidates.Push(A_ScriptDir . "\daily_worker.exe")
+    candidates.Push(A_ScriptDir . "\features\daily_worker.exe")
+
+    for candidate in candidates {
+        if FileExist(candidate)
+            return candidate
+    }
+
+    return ""
 }
 
 _daily_has_alive_workers(pids) {
