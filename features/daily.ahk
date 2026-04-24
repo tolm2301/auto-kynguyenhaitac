@@ -1,6 +1,10 @@
+global hoat_dong_button := [662, 39]
+
+
 _feature_daily() {
 
     global isRunning, g_featureText, g_dailyWorkerPids, g_dailyStopFile
+    
 
     _daily_init_runtime()
     _win_resize_list()
@@ -577,7 +581,7 @@ _nhan_thuong_linh_danh_thue(hwnd) {
 }
 
 _cuong_hoa_tau_chien(hwnd) {
-    _click_post(hwnd, 728, 43)
+    _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
     Sleep FEATURE_TASK_SLEEP
     _multi_click_post(hwnd, 419, 524, 2, LOAD_SLEEP)
     Sleep FEATURE_TASK_SLEEP
@@ -683,7 +687,7 @@ _hoi_dam(hwnd) {
 }
 
 _linh_the_bai(hwnd) {
-    _click_post(hwnd, 728, 43)
+    _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
     Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 419, 524)
     Sleep LOAD_SLEEP
@@ -916,7 +920,7 @@ _nguyen_to(hwnd) {
 
 _tap_kick(hwnd) {
     ; go to tinh nag
-    _click_post(hwnd, 732, 36)
+    _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
     Sleep FEATURE_TASK_SLEEP
     _click_post(hwnd, 405, 321)
     Sleep LOAD_SLEEP

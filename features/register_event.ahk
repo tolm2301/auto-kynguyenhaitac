@@ -1,3 +1,5 @@
+global hoat_dong_button := [662, 39]
+
 _feature_register_uta() {
     _win_resize_list()
     g_featureText.text := "Tính năng đang chạy: Register Event"
@@ -9,7 +11,7 @@ _feature_register_uta() {
         Sleep 3000
 
         for hwnd in hwnds {
-            _click_post(hwnd, 729, 35)
+            _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
             Sleep 3000
             _click_post(hwnd, 414, 523)
             Sleep 2000

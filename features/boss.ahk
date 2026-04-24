@@ -1,3 +1,6 @@
+
+global hoat_dong_button := [662, 39]
+
 _now_hour() {
     return Integer(getHour())
 }
@@ -20,6 +23,7 @@ _feature_kaido() {
 
 _boss_run_parallel(mode, featureName) {
     global isRunning, g_featureText, g_bossWorkerPids
+    
 
     _win_resize_list()
     g_featureText.text := "Tính năng đang chạy: " . featureName
@@ -113,7 +117,7 @@ _boss_worker_entry(mode, hwnd) {
 
 _boss_run_punk_single(hwnd) {
     Sleep 3000
-    _click_post(hwnd, 729, 35)
+    _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
     Sleep 3000
     _click_post(hwnd, 339, 200)
     Sleep 2000
@@ -129,7 +133,7 @@ _boss_run_punk_single(hwnd) {
 
 _boss_run_kraken_single(hwnd) {
     Sleep 3000
-    _click_post(hwnd, 729, 35)
+    _click_post(hwnd, hoat_dong_button[1], hoat_dong_button[2])
     Sleep 3000
     _click_post(hwnd, 402, 259)
     Sleep 2000
