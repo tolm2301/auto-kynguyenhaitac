@@ -16,15 +16,22 @@ _feature_haitacthongthai() {
     isRunning := true
     g_featureText.Text := "Tính năng đang chạy: Hải tặc thông thái"
 
+    workerPids := []
+
     try {
-        iniPath := A_ScriptDir . "\resources\Question.ini"
+        baseDir := _httt_get_base_dir()
+        iniPath := baseDir . "\resources\Question.ini"
 
-        hwnd := hwnds[1]
+        if !FileExist(iniPath) {
+            _httt_log("Thiếu Question.ini: " . iniPath)
+            return
+        }
 
-        questionText := _ocr_from_bit_map(hwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
+        questionHwnd := hwnds[1]
+        questionText := _ocr_from_bit_map(questionHwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
         questionText := _httt_clean_question_text(questionText)
 
-        _httt_log("OCR Text=" . questionText)
+        _httt_log("OCR question hwnd=" . questionHwnd . " | text=" . questionText)
 
         if (Trim(questionText) = "") {
             _httt_log("OCR câu hỏi rỗng")
@@ -40,24 +47,130 @@ _feature_haitacthongthai() {
 
         _httt_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
 
-        for hwndElement in hwnds {
-            if !isRunning
-                return
+        workerPids := _httt_start_workers(hwnds, bestMatch.Answer)
+        _httt_wait_workers(workerPids)
+    } finally {
+        _httt_stop_worker_processes(workerPids)
+        _feature_reset_running_status()
+    }
+}
 
-            optionMap := _httt_read_option_map(hwndElement, bestMatch.Answer)
-            answerResult := _httt_find_best_answer_for_options(optionMap, bestMatch.Answer)
-            if (answerResult.letter = "" || answerResult.score < 0.3) {
-                _httt_log("Answer match thap | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score))
-                continue
-            }
-            _httt_log("Answer matched | letter=" . answerResult.letter . " score=" . Format("{:.3f}", answerResult.score))
+_feature_haitacthongthai_worker_entry(hwnd, answerText) {
+    global g_featureText
 
-            if _httt_click_answer(hwndElement, answerResult.letter)
-                _httt_log("Đã trả lời " . answerResult.letter . " | score=" . Format("{:.3f}", answerResult.score))
+    _httt_log("Worker start | hwnd=" . hwnd . " | answer=" . answerText)
+
+    try {
+        optionMap := _httt_read_option_map(hwnd)
+        answerResult := _httt_find_best_answer_for_options(optionMap, answerText, false)
+        if (answerResult.letter = "" || answerResult.score < 0.3) {
+            _httt_log("Worker answer match thấp | hwnd=" . hwnd . " | letter=" . answerResult.letter . " | score=" . Format("{:.3f}", answerResult.score))
+            return
         }
+
+        _httt_log("Worker answer matched | hwnd=" . hwnd . " | letter=" . answerResult.letter . " | score=" . Format("{:.3f}", answerResult.score))
+
+        if _httt_click_answer(hwnd, answerResult.letter)
+            _httt_log("Worker đã trả lời | hwnd=" . hwnd . " | letter=" . answerResult.letter)
+    } catch as err {
+        _httt_log("Worker fail | hwnd=" . hwnd . " | err=" . err.Message)
     } finally {
         _feature_reset_running_status()
     }
+}
+
+_httt_start_workers(hwnds, answerText) {
+    pids := []
+    for hwnd in hwnds {
+        pid := _httt_start_worker(hwnd, answerText)
+        if (pid > 0) {
+            pids.Push(pid)
+            _httt_log("Spawn worker | hwnd=" . hwnd . " | pid=" . pid)
+        } else {
+            _httt_log("Spawn worker failed | hwnd=" . hwnd)
+        }
+    }
+    return pids
+}
+
+_httt_start_worker(hwnd, answerText) {
+    pid := 0
+    baseDir := _httt_get_base_dir()
+
+    if A_IsCompiled {
+        workerExe := _httt_resolve_worker_exe()
+        if (workerExe != "") {
+            runCommand := Format('"{1}" "{2}" "{3}" "{4}"', workerExe, hwnd, answerText)
+            try Run(runCommand, baseDir, "Hide", &pid)
+            return pid
+        }
+
+        runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_ScriptFullPath, hwnd, answerText)
+        try Run(runCommand, baseDir, "Hide", &pid)
+        return pid
+    }
+
+    workerScript := baseDir . "\features\haitacthongthai_worker.ahk"
+    if !FileExist(workerScript)
+        return 0
+
+    runCommand := Format('"{1}" "{2}" "{3}" "{4}"', A_AhkPath, workerScript, hwnd, answerText)
+    try Run(runCommand, baseDir, "Hide", &pid)
+    return pid
+}
+
+_httt_resolve_worker_exe() {
+    baseDir := _httt_get_base_dir()
+    candidates := []
+    candidates.Push(baseDir . "\haitacthongthai_worker.exe")
+    candidates.Push(baseDir . "\features\haitacthongthai_worker.exe")
+
+    for candidate in candidates {
+        if FileExist(candidate)
+            return candidate
+    }
+
+    return ""
+}
+
+_httt_wait_workers(pids) {
+    global isRunning
+
+    while _httt_has_alive_workers(pids) {
+        if !isRunning {
+            _httt_stop_worker_processes(pids)
+            break
+        }
+
+        Sleep 500
+    }
+}
+
+_httt_has_alive_workers(pids) {
+    for pid in pids {
+        if ProcessExist(pid)
+            return true
+    }
+
+    return false
+}
+
+_httt_stop_worker_processes(pids) {
+    for pid in pids {
+        if ProcessExist(pid) {
+            try ProcessClose(pid)
+        }
+    }
+}
+
+_httt_get_base_dir() {
+    if DirExist(A_ScriptDir . "\resources")
+        return A_ScriptDir
+
+    if DirExist(A_ScriptDir . "\..\resources")
+        return A_ScriptDir . "\.."
+
+    return A_WorkingDir
 }
 
 _httt_read_question(hwnd) {
@@ -137,7 +250,7 @@ _httt_fuzzy_match(iniPath, section, searchStr, threshold) {
     return {Score: 0}
 }
 
-_httt_find_best_answer_for_options(optionMap, bestMatchAnswer) {
+_httt_find_best_answer_for_options(optionMap, bestMatchAnswer, showWarning := true) {
     expectedRaw := _httt_extract_answer_value(bestMatchAnswer)
     expectedNorm := _httt_normalize(expectedRaw)
     if (expectedNorm = "")
@@ -211,7 +324,6 @@ _httt_pick_answer(answerText, optionMap) {
 
     if (bestScore < 0.40) {
         _httt_log("Do tin cay thap (HTTT random ABCD), bo qua cau hoi")
-        MsgBox("Độ tin cậy thấp, không auto click.`nĐáp án data: " . answerText, "HTTT - Cần xử lý tay")
         return { letter: "", score: bestScore }
     }
 
@@ -477,7 +589,7 @@ _httt_str_diff(s1, s2) {
 }
 
 _httt_log(msg) {
-    logDir := A_ScriptDir . "\logs"
+    logDir := _httt_get_base_dir() . "\logs"
     if !DirExist(logDir)
         DirCreate(logDir)
 
@@ -487,7 +599,7 @@ _httt_log(msg) {
 }
 
 _httt_reset_log() {
-    logDir := A_ScriptDir . "\logs"
+    logDir := _httt_get_base_dir() . "\logs"
     if !DirExist(logDir)
         DirCreate(logDir)
 

@@ -51,6 +51,13 @@ if (A_Args.Length >= 3 and A_Args[1] = "--boss-worker") {
     ExitApp()
 }
 
+if (A_Args.Length >= 2 and A_Args[1] = "--httt-worker") {
+    hwnd := Integer(A_Args[2])
+    answerText := (A_Args.Length >= 3) ? A_Args[3] : ""
+    _feature_haitacthongthai_worker_entry(hwnd, answerText)
+    ExitApp()
+}
+
 
 _ocr_worker_cleanup_stale_runtime(_ocr_worker_init())
 
