@@ -1,6 +1,7 @@
 
 ; variable
-global httt_question_pos := [294, 190, 977, 340]
+global httt_question_pos := [294, 190, 977, 296]
+global default_threshhold := 0.6
 
 _feature_haitacthongthai() {
     global isRunning, g_featureText
@@ -159,7 +160,7 @@ _httt_find_best_answer_for_options(optionMap, bestMatchAnswer) {
 
             rawScore := _httt_similarity_v2(expectedNorm, ocrNorm)
 
-            if (rawScore >= 0.8 && rawScore > bestScore) {
+            if (rawScore >= default_threshhold && rawScore > bestScore) {
                 bestScore := rawScore
                 bestOption := letter
                 bestMatchedAnswer := ocrParsed
@@ -301,7 +302,7 @@ _httt_clean_question_text(text) {
     return Trim(q)
 }
 
-_httt_find_fuzzy_match(iniPath, section, searchStr, threshold := 0.6) {
+_httt_find_fuzzy_match(iniPath, section, searchStr, threshold := default_threshhold) {
     bestScore := 0
     bestTie := -1
     matchedQ := ""

@@ -1,6 +1,7 @@
 
 ; variable
 global hoidap_quest_pos := [580, 146, 930, 190]
+global default_threshhold := 0.6
 
 _hoidap_get_option_config() {
     static cfg := Map(
@@ -140,7 +141,7 @@ _hoidap_find_best_answer_for_options(optionMap, bestMatchAnswer) {
 
             rawScore := _hoidap_similarity(expectedNorm, ocrNorm)
 
-            if (rawScore >= 0.8 && rawScore > bestScore) {
+            if (rawScore >= default_threshhold && rawScore > bestScore) {
                 bestScore := rawScore
                 bestOption := letter
                 bestMatchedAnswer := ocrParsed
@@ -264,7 +265,7 @@ _hoidap_reset_log() {
     try FileDelete(logPath)
 }
 
-FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.8) {
+FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := default_threshhold) {
     BestScore := 0
     MatchedQ := ""
     MatchedA := ""
@@ -309,7 +310,7 @@ FindFuzzyMatch(IniPath, Section, SearchStr, Threshold := 0.8) {
     return { Score: 0 }
 }
 
-FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, section := "Questions" ,Threshold := 0.8) {
+FindBestFuzzyMatchAcrossIni(IniPath, SearchStr, section := "Questions" ,Threshold := default_threshhold) {
     BestScore := 0
     MatchedQ := ""
     MatchedA := ""
