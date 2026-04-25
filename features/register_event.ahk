@@ -26,6 +26,25 @@ _feature_register_uta() {
     }
 }
 
+_feature_register_hai_tac_thong_thai() {
+    _win_resize_list()
+    g_featureText.text := "Tính năng đang chạy: Register Event HTTT"
+    hwnds := _win_get_list()
+    global isRunning
+    isRunning := true
+
+    try {
+        Sleep 3000
+
+        for hwnd in hwnds {
+            _click_post(hwnd, 1128, 535)
+            Sleep 3000
+        }
+    } finally {
+        _feature_reset_running_status()
+    }
+}
+
 _feature__uta() {
     _win_resize_list()
     g_featureText.text := "Tính năng đang chạy: Uta World"

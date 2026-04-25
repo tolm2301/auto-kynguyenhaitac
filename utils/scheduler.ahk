@@ -200,6 +200,8 @@ _scheduler_run_event(eventName) {
             _feature_hoidapcothuong()
         case "Register Uta World":
             _feature_register_uta()  
+        case "Hải tặc thông thái Register":
+            _feature_register_hai_tac_thong_thai()
         case "Uta World":
             _feature__uta()    
         default:
@@ -222,6 +224,8 @@ _scheduler_is_supported_event(eventName) {
         "Hỏi đáp có thưởng", true,
         "Register Uta World", true,
         "Uta World", true,
+        "Hải tặc thông thái Register", true,
+        "Hải tặc thông thái", true,
     )
 
     return supported.Has(eventName)
