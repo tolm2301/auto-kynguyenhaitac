@@ -9,50 +9,103 @@ _feature_haitacthongthai() {
     _httt_reset_log()
 
     _win_resize_list()
-    hwnds := _win_get_list()
-    if (hwnds.Length = 0)
-        return
-
     isRunning := true
     g_featureText.Text := "Tính năng đang chạy: Hải tặc thông thái"
 
-    workerPids := []
-
     try {
-        baseDir := _httt_get_base_dir()
-        iniPath := baseDir . "\resources\Question.ini"
-
-        if !FileExist(iniPath) {
-            _httt_log("Thiếu Question.ini: " . iniPath)
-            return
-        }
-
-        questionHwnd := hwnds[1]
-        questionText := _ocr_from_bit_map(questionHwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
-        questionText := _httt_clean_question_text(questionText)
-
-        _httt_log("OCR question hwnd=" . questionHwnd . " | text=" . questionText)
-
-        if (Trim(questionText) = "") {
-            _httt_log("OCR câu hỏi rỗng")
-            return
-        }
-
-        bestMatch := FindBestFuzzyMatchAcrossIni(iniPath, questionText, "Haitacthongthai")
-
-        if (bestMatch.Score < 0.3) {
-            _httt_log("Question score thấp: " . Format("{:.3f}", bestMatch.Score))
-            return
-        }
-
-        _httt_log("Q match | score=" . Format("{:.3f}", bestMatch.Score) . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
-
-        workerPids := _httt_start_workers(hwnds, bestMatch.Answer)
-        _httt_wait_workers(workerPids)
+        _httt_run_round()
     } finally {
-        _httt_stop_worker_processes(workerPids)
         _feature_reset_running_status()
     }
+}
+
+_feature_haitacthongthai_session(event, roundCount := 10) {
+    global isRunning, g_featureText
+
+    _httt_reset_log()
+    _win_resize_list()
+
+    if !IsObject(event)
+        throw Error("Thiếu base time cho HTTT session")
+
+    startHour := Integer(event.hour)
+    startMinute := Integer(event.minute)
+    baseTime := _httt_build_session_base_time(startHour, startMinute)
+
+    isRunning := true
+    g_featureText.Text := "Tính năng đang chạy: Hải tặc thông thái (" . roundCount . " câu)"
+
+    try {
+        _httt_log("Session start | base=" . Format("{:02}:{:02}:02", startHour, startMinute) . " | rounds=" . roundCount)
+
+        Loop roundCount {
+            if !isRunning
+                throw Error("HTTT session stopped")
+
+            roundIndex := A_Index
+            targetTime := DateAdd(baseTime, (roundIndex - 1) * 30, "Seconds")
+            _httt_wait_until(targetTime)
+
+            if !isRunning
+                throw Error("HTTT session stopped")
+
+            _httt_safe_round_offset()
+            _httt_log("Round " . roundIndex . "/" . roundCount . " | target=" . FormatTime(targetTime, "HH:mm:ss") . " | now=" . FormatTime(A_Now, "HH:mm:ss"))
+            _httt_run_round(roundIndex, roundCount)
+
+            if !isRunning
+                throw Error("HTTT session stopped")
+        }
+    } finally {
+        _feature_reset_running_status()
+    }
+}
+
+_httt_run_round(roundIndex := 1, roundCount := 1) {
+    global httt_question_pos, isRunning
+
+    hwnds := _httt_get_hwnds()
+    if (hwnds.Length = 0)
+        return false
+
+    baseDir := _httt_get_base_dir()
+    iniPath := baseDir . "\resources\Question.ini"
+    if !FileExist(iniPath) {
+        _httt_log("Thiếu Question.ini: " . iniPath)
+        return false
+    }
+
+    questionHwnd := hwnds[1]
+    questionText := _ocr_from_bit_map(questionHwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
+    questionText := _httt_clean_question_text(questionText)
+
+    _httt_log("OCR question | round=" . roundIndex . "/" . roundCount . " | hwnd=" . questionHwnd . " | text=" . questionText)
+
+    if (Trim(questionText) = "") {
+        _httt_log("OCR câu hỏi rỗng | round=" . roundIndex)
+        return false
+    }
+
+    bestMatch := FindBestFuzzyMatchAcrossIni(iniPath, questionText, "Haitacthongthai")
+    if (bestMatch.Score < 0.3) {
+        _httt_log("Question score thấp | round=" . roundIndex . " | score=" . Format("{:.3f}", bestMatch.Score))
+        return false
+    }
+
+    _httt_log("Q match | round=" . roundIndex . " | score=" . Format("{:.3f}", bestMatch.Score) . " | Q=" . bestMatch.Question . " | A=" . bestMatch.Answer)
+
+    workerPids := _httt_start_workers(hwnds, bestMatch.Answer)
+    if (workerPids.Length = 0) {
+        _httt_log("Không spawn được worker | round=" . roundIndex)
+        return false
+    }
+
+    _httt_wait_workers(workerPids)
+
+    if !isRunning
+        return false
+
+    return true
 }
 
 _feature_haitacthongthai_worker_entry(hwnd, answerText) {
@@ -91,6 +144,36 @@ _httt_start_workers(hwnds, answerText) {
         }
     }
     return pids
+}
+
+_httt_get_hwnds() {
+    return _win_get_list()
+}
+
+_httt_build_session_base_time(startHour, startMinute) {
+    return FormatTime(A_Now, "yyyyMMdd") . Format("{:02}{:02}02", Integer(startHour), Integer(startMinute))
+}
+
+_httt_wait_until(targetTime) {
+    global isRunning
+
+    while isRunning {
+        nowStamp := FormatTime(A_Now, "yyyyMMddHHmmss")
+        if (nowStamp >= targetTime)
+            break
+
+        remainingSec := DateDiff(targetTime, A_Now, "Seconds")
+        if (remainingSec <= 0)
+            Sleep 100
+        else
+            Sleep Min(remainingSec * 1000, 250)
+    }
+}
+
+_httt_safe_round_offset() {
+    sec := Integer(FormatTime(A_Now, "ss"))
+    if (Mod(sec, 30) = 0)
+        Sleep 500
 }
 
 _httt_start_worker(hwnd, answerText) {
