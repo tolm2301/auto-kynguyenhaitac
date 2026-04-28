@@ -354,7 +354,7 @@ _nha_xuong(hwnd) {
     ; nhan thuong
     _click_post(hwnd, 1071, 381)
     Sleep LOAD_SLEEP
-    _click_post(hwnd, 852, 2985)
+    _click_post(hwnd, 852, 287)
     Sleep LOAD_SLEEP
     _click_post(hwnd, 1211, 51)
     Sleep EXIT_FEATURE_SLEEP

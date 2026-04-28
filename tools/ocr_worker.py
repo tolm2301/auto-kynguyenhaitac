@@ -201,25 +201,46 @@ def _load_paddle(lang: str, log_file: str):
     sig = inspect.signature(PaddleOCR.__init__)
     available = set(sig.parameters.keys())
 
-    # Tương thích cả PaddleOCR 2.x và 3.x:
-    # - 2.x: use_angle_cls, show_log
-    # - 3.x: use_doc_orientation_classify, use_doc_unwarping, use_textline_orientation
-    kwargs = {"lang": lang}
+    kwargs = {}
+
+    # PaddleOCR 2.x style
+    if "lang" in available:
+        kwargs["lang"] = "vi"   # nhẹ hơn và hợp chữ Latin/tiếng Việt hơn "vi" trong nhiều case
+
     if "use_angle_cls" in available:
         kwargs["use_angle_cls"] = False
+
     if "show_log" in available:
         kwargs["show_log"] = False
 
+    if "det_limit_side_len" in available:
+        kwargs["det_limit_side_len"] = 640
+
+    if "det_limit_type" in available:
+        kwargs["det_limit_type"] = "max"
+
+    if "rec_batch_num" in available:
+        kwargs["rec_batch_num"] = 2
+
+    # PaddleOCR 3.x style
+    if "text_detection_model_name" in available:
+        kwargs["text_detection_model_name"] = "PP-OCRv4_mobile_det"
+
+    if "text_recognition_model_name" in available:
+        kwargs["text_recognition_model_name"] = "latin_PP-OCRv3_mobile_rec"
+
     if "use_doc_orientation_classify" in available:
         kwargs["use_doc_orientation_classify"] = False
+
     if "use_doc_unwarping" in available:
         kwargs["use_doc_unwarping"] = False
+
     if "use_textline_orientation" in available:
         kwargs["use_textline_orientation"] = False
 
     ocr_engine = PaddleOCR(**kwargs)
     elapsed = _now_ms() - started
-    _append_log(log_file, f"[INFO] PaddleOCR loaded lang={lang} elapsedMs={elapsed} kwargs={kwargs}")
+    _append_log(log_file, f"[INFO] PaddleOCR loaded elapsedMs={elapsed} kwargs={kwargs}")
     return ocr_engine
 
 

@@ -78,6 +78,7 @@ $resourcesSrc = Join-Path $root 'resources'
 $mainSource = Join-Path $root 'main.ahk'
 $dailyWorkerSource = Join-Path $root 'features\daily_worker.ahk'
 $bossWorkerSource = Join-Path $root 'features\boss_worker.ahk'
+$htttWorkerSource = Join-Path $root 'features\haitacthongthai_worker.ahk'
 $workerSource = Join-Path $root 'tools\ocr_worker.py'
 $ocrWorkerRequirements = Join-Path $root 'tools\ocr_worker_requirements.txt'
 $workerBuildRoot = Join-Path $root '.build\ocr_worker'
@@ -341,6 +342,7 @@ New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
 if (-not (Test-Path $mainSource)) { throw "Thiếu main.ahk" }
 if (-not (Test-Path $dailyWorkerSource)) { throw "Thiếu features\daily_worker.ahk" }
 if (-not (Test-Path $bossWorkerSource)) { throw "Thiếu features\boss_worker.ahk" }
+if (-not (Test-Path $htttWorkerSource)) { throw "Thiếu features\haitacthongthai_worker.ahk" }
 if (-not (Test-Path $workerSource)) { throw "Thiếu tools\ocr_worker.py" }
 if (-not (Test-Path $ocrWorkerRequirements)) { throw "Thiếu tools\ocr_worker_requirements.txt" }
 if (-not (Test-Path $resourcesSrc)) { throw "Thiếu thư mục resources" }
@@ -401,6 +403,7 @@ Write-Step "release -> $releaseRoot"
 $mainOut = Join-Path $releaseRoot 'kynguyenhaitac-auto.exe'
 $dailyWorkerOut = Join-Path $releaseRoot 'daily_worker.exe'
 $bossWorkerOut = Join-Path $releaseRoot 'boss_worker.exe'
+$htttWorkerOut = Join-Path $releaseRoot 'haitacthongthai_worker.exe'
 $workerOut = Join-Path $releaseRoot 'ocr_worker.exe'
 
 Write-Step "build main exe"
@@ -411,6 +414,9 @@ Build-AhkExe -Source $dailyWorkerSource -Output $dailyWorkerOut -BaseExe $ahkBas
 
 Write-Step "build boss worker exe"
 Build-AhkExe -Source $bossWorkerSource -Output $bossWorkerOut -BaseExe $ahkBase -Label 'Ahk2Exe boss worker'
+
+Write-Step "build HTTT worker exe"
+Build-AhkExe -Source $htttWorkerSource -Output $htttWorkerOut -BaseExe $ahkBase -Label 'Ahk2Exe HTTT worker'
 
 Write-Step "build OCR worker exe"
 New-Item -ItemType Directory -Force -Path $workerBuildRoot | Out-Null
@@ -499,6 +505,7 @@ $readmeText = @(
     '- kynguyenhaitac-auto.exe'
     '- daily_worker.exe'
     '- boss_worker.exe'
+    '- haitacthongthai_worker.exe'
     '- ocr_worker.exe'
     '- resources\'
     ''

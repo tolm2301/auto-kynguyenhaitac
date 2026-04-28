@@ -114,7 +114,7 @@ _scheduler_execute_event(event) {
     _scheduler_log("Auto run: " . event.name . " at " . Format("{:02}:{:02}", event.hour, event.minute))
 
     try {
-        _scheduler_run_event(event.name)
+        _scheduler_run_event(event.name, event)
         _scheduler_mark_executed(event.runKey, "done")
         _scheduler_log("Completed: " . event.name)
     } catch as err {
@@ -168,7 +168,7 @@ _scheduler_get_state_path(date := "") {
     return logDir . "\\scheduler_state_" . d . ".txt"
 }
 
-_scheduler_run_event(eventName) {
+_scheduler_run_event(eventName, event := "") {
     global g_inputCount
 
     count := Integer(g_inputCount.Value)
@@ -200,6 +200,12 @@ _scheduler_run_event(eventName) {
             _feature_hoidapcothuong()
         case "Register Uta World":
             _feature_register_uta()  
+        case "Hải tặc thông thái Register":
+            _feature_register_hai_tac_thong_thai()
+        case "Hải tặc thông thái":
+            if !IsObject(event)
+                throw Error("Thiếu thông tin giờ chạy cho Hải tặc thông thái")
+            _feature_haitacthongthai_session(event, 10)
         case "Uta World":
             _feature__uta()    
         default:
@@ -222,6 +228,8 @@ _scheduler_is_supported_event(eventName) {
         "Hỏi đáp có thưởng", true,
         "Register Uta World", true,
         "Uta World", true,
+        "Hải tặc thông thái Register", true,
+        "Hải tặc thông thái", true,
     )
 
     return supported.Has(eventName)
