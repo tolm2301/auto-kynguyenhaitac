@@ -8,6 +8,9 @@ import time
 import traceback
 
 
+_stdio_sinks = []
+
+
 def _now_ms() -> int:
     return int(time.time() * 1000)
 
@@ -29,6 +32,23 @@ def _append_log(path: str, message: str) -> None:
     _ensure_dir(os.path.dirname(path))
     with open(path, "a", encoding="utf-8") as f:
         f.write(line)
+
+
+def _ensure_headless_stdio() -> None:
+    os.environ.setdefault("TQDM_DISABLE", "1")
+
+    global _stdio_sinks
+    devnull_path = os.devnull
+
+    if sys.stdout is None:
+        sink = open(devnull_path, "w", encoding="utf-8")
+        _stdio_sinks.append(sink)
+        sys.stdout = sink
+
+    if sys.stderr is None:
+        sink = open(devnull_path, "w", encoding="utf-8")
+        _stdio_sinks.append(sink)
+        sys.stderr = sink
 
 
 def _parse_kv_file(path: str) -> dict:
@@ -204,6 +224,8 @@ def _load_paddle(lang: str, log_file: str):
 
 
 def run_server(args) -> int:
+    _ensure_headless_stdio()
+
     ipc_dir = os.path.abspath(args.ipc_dir)
     req_dir = os.path.join(ipc_dir, "requests")
     resp_dir = os.path.join(ipc_dir, "responses")
