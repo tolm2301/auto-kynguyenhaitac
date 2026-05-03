@@ -151,6 +151,7 @@ def _process_one_request(req_path: str, ocr_engine, log_file: str) -> None:
         if not os.path.exists(image_path):
             raise RuntimeError(f"Image not found: {image_path}")
 
+        _append_log(log_file, f"[INFO] request={request_id} started image={image_path}")
         ocr_result = _run_ocr(ocr_engine, image_path)
         text = _extract_text_from_paddle(ocr_result)
         ok = True
@@ -170,7 +171,7 @@ def _process_one_request(req_path: str, ocr_engine, log_file: str) -> None:
     preview = text[:120].replace("\n", " | ")
     _append_log(
         log_file,
-        f"[INFO] request={request_id} ok={1 if ok else 0} elapsedMs={elapsed_ms} image={image_path} preview={preview}",
+        f"[INFO] request={request_id} finished ok={1 if ok else 0} elapsedMs={elapsed_ms} image={image_path} preview={preview}",
     )
 
 
@@ -185,7 +186,7 @@ def _load_paddle(lang: str, log_file: str):
 
     # PaddleOCR 2.x style
     if "lang" in available:
-        kwargs["lang"] = "vi"   # nhẹ hơn và hợp chữ Latin/tiếng Việt hơn "vi" trong nhiều case
+        kwargs["lang"] = lang or "vi"
 
     if "use_angle_cls" in available:
         kwargs["use_angle_cls"] = False
@@ -194,13 +195,22 @@ def _load_paddle(lang: str, log_file: str):
         kwargs["show_log"] = False
 
     if "det_limit_side_len" in available:
-        kwargs["det_limit_side_len"] = 640
+        kwargs["det_limit_side_len"] = 512
 
     if "det_limit_type" in available:
         kwargs["det_limit_type"] = "max"
 
     if "rec_batch_num" in available:
-        kwargs["rec_batch_num"] = 2
+        kwargs["rec_batch_num"] = 1
+
+    if "cpu_threads" in available:
+        kwargs["cpu_threads"] = 2
+
+    if "enable_mkldnn" in available:
+        kwargs["enable_mkldnn"] = True
+
+    if "use_mp" in available:
+        kwargs["use_mp"] = False
 
     # PaddleOCR 3.x style
     if "text_detection_model_name" in available:

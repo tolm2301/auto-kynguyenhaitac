@@ -59,6 +59,10 @@ _daily_get_task_list() {
         tasks.Push(["huyet_chien_den_cung", huyet_chien_den_cung])
         tasks.Push(["tan_cong_hai_quan", tan_cong_hai_quan])
     }
+    if (getDayOfTheWeekNumber() = 2) {
+        tasks.Push(["reverse_12", reverse_12])
+        tasks.Push(["dinh_phong", dinh_phong])
+    }
 
     tasks.Push(["che_do", _che_do])                         ;1
     tasks.Push(["anh_hon", _anh_hon])                       ;2
@@ -465,7 +469,7 @@ _tam_bao(hwnd) {
         Sleep LOAD_SLEEP
         _click_post(hwnd, 683, 364)
         Sleep LOAD_SLEEP
-        _multi_click_post(hwnd, 908, 310, 30)
+        _multi_click_post(hwnd, 908, 310, 50)
         Sleep LOAD_SLEEP
         _click_post(hwnd, 557, 570)
         Sleep 60000
@@ -572,6 +576,44 @@ _boi_duong_tinh_linh(hwnd) {
     _post_with_vk_string(hwnd, "ENTER")
     Sleep LOAD_SLEEP
     _click_post(hwnd, 1227, 38)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+reverse_12(hwnd) {
+    _click_post(hwnd, 926, 41)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 1045, 193)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 409, 503)
+    Sleep FEATURE_TASK_LONG_SLEEP
+
+    ; nhan qua
+    _click_post(hwnd, 674, 533)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 576, 421)
+    Sleep LOAD_SLEEP
+
+    ; thoat
+    _click_post(hwnd, 1222, 26)
+    Sleep EXIT_FEATURE_SLEEP
+}
+
+dinh_phong(hwnd) {
+    _click_post(hwnd, 926, 41)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 1045, 193)
+    Sleep FEATURE_TASK_SLEEP
+    _click_post(hwnd, 623, 503)
+    Sleep FEATURE_TASK_LONG_SLEEP
+
+    ; nhan qua
+    _click_post(hwnd, 674, 533)
+    Sleep LOAD_SLEEP
+    _click_post(hwnd, 576, 326)
+    Sleep LOAD_SLEEP
+
+    ; thoat
+    _click_post(hwnd, 1222, 26)
     Sleep EXIT_FEATURE_SLEEP
 }
 

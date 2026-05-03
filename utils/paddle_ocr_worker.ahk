@@ -24,6 +24,9 @@ _ocr_worker_init() {
     state["requestTimeoutMs"] := 15000
     state["startupTimeoutMs"] := 20000
     state["pollIntervalMs"] := 60
+    state["serializeLockName"] := "AutoKyNguyenHaiTac_PaddleOCR_Lock"
+    state["serializeLockTimeoutMs"] := 60000
+    state["serializeLockPollMs"] := 50
     state["lang"] := "vi"
     state["keepTempFiles"] := false
     state["workerPid"] := 0
@@ -202,6 +205,8 @@ _ocr_worker_start_background(state := 0) {
 _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
     state := _ocr_worker_apply_options(ocrOptions)
     startedAt := A_TickCount
+    lockHandle := 0
+    reqId := ""
 
     result := Map(
         "ok", false,
@@ -214,6 +219,12 @@ _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
         if !hBitmap
             throw Error("Invalid HBITMAP")
 
+        lockResult := _ocr_worker_acquire_request_lock(state)
+        if !lockResult["ok"]
+            throw Error(lockResult["err"])
+
+        lockHandle := lockResult["handle"]
+
         if !_ocr_worker_ensure_ready()
             throw Error("OCR worker is not ready. lastError=" . state["lastError"])
 
@@ -222,6 +233,13 @@ _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
         reqTmpPath := state["requestDir"] . "\\req_" . reqId . ".tmp"
         reqPath := state["requestDir"] . "\\req_" . reqId . ".req"
         respPath := state["responseDir"] . "\\resp_" . reqId . ".resp"
+
+        _ocr_worker_trace("INFO", "Request started", Map(
+            "requestId", reqId,
+            "lang", state["lang"],
+            "lockName", state["serializeLockName"],
+            "lockWaitMs", lockResult["waitedMs"]
+        ))
 
         _ocr_save_bitmap_to_file(hBitmap, imagePath)
 
@@ -267,6 +285,7 @@ _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
             try FileDelete(reqPath)
             try FileDelete(respPath)
         }
+
     } catch Error as err {
         result["ok"] := false
         result["text"] := ""
@@ -278,9 +297,60 @@ _ocr_worker_from_hbitmap(hBitmap, ocrOptions := 0) {
             "extra", err.Extra
         ))
     }
+    finally {
+        if (reqId != "") {
+            _ocr_worker_trace("INFO", "Request finished", Map(
+                "requestId", reqId,
+                "ok", result["ok"],
+                "elapsedMs", A_TickCount - startedAt,
+                "textPreview", _ocr_worker_short_text(result["text"])
+            ))
+        }
+
+        if lockHandle
+            _ocr_worker_release_request_lock(lockHandle)
+    }
 
     result["elapsedMs"] := A_TickCount - startedAt
     return result
+}
+
+_ocr_worker_acquire_request_lock(state := 0) {
+    if !IsObject(state)
+        state := _ocr_worker_init()
+
+    lockName := state["serializeLockName"]
+    lockHandle := DllCall("CreateMutexW", "Ptr", 0, "Int", 0, "Str", lockName, "Ptr")
+    if !lockHandle
+        return Map("ok", false, "handle", 0, "err", "CreateMutex failed")
+
+    waitResult := DllCall("WaitForSingleObject", "Ptr", lockHandle, "UInt", 0, "UInt")
+    if (waitResult = 0 || waitResult = 0x80)
+        return Map("ok", true, "handle", lockHandle, "waitedMs", 0)
+
+    _ocr_worker_trace("INFO", "Request queued", Map(
+        "lockName", lockName,
+        "timeoutMs", state["serializeLockTimeoutMs"]
+    ))
+
+    startedAt := A_TickCount
+    timeoutMs := state["serializeLockTimeoutMs"]
+    pollMs := state["serializeLockPollMs"]
+
+    while ((A_TickCount - startedAt) <= timeoutMs) {
+        waitResult := DllCall("WaitForSingleObject", "Ptr", lockHandle, "UInt", 0, "UInt")
+        if (waitResult = 0 || waitResult = 0x80)
+            return Map("ok", true, "handle", lockHandle, "waitedMs", A_TickCount - startedAt)
+        Sleep(pollMs)
+    }
+
+    try DllCall("CloseHandle", "Ptr", lockHandle)
+    return Map("ok", false, "handle", 0, "err", "OCR serialize lock timeout")
+}
+
+_ocr_worker_release_request_lock(lockHandle) {
+    try DllCall("ReleaseMutex", "Ptr", lockHandle)
+    try DllCall("CloseHandle", "Ptr", lockHandle)
 }
 
 _ocr_worker_build_start_command(state) {

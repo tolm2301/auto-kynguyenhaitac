@@ -43,7 +43,7 @@ _gui_init() {
     g_featureText := myGui.AddText("x14 y134 w332 h24 +0x200", "Tính năng đang chạy: Chưa có")
 
     myGui.SetFont("s10", "Segoe UI")
-    myTab := myGui.AddTab("x" guiCfg.tabX " y" guiCfg.tabY " w" guiCfg.tabW " h" guiCfg.tabH, ["Main", "Boss", "Phụ trợ"])
+    myTab := myGui.AddTab("x" guiCfg.tabX " y" guiCfg.tabY " w" guiCfg.tabW " h" guiCfg.tabH, ["Main", "Boss", "Phụ trợ", "Vườn ác ma"])
 
     myGui.SetFont("s9 c374151", "Segoe UI")
     g_nextEventControl := myGui.AddText("x14 y472 w332 h28 +0x200", "")
@@ -72,6 +72,13 @@ _gui_init() {
     btnHdTT := myGui.AddButton("x30 y380 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Hỏi đáp có thưởng")
     btnDailyTaskAuto := myGui.AddButton("x30 y417 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "NV hàng ngày")
 
+    ; Vườn ác ma tab
+    myTab.UseTab(4)
+    btnTrongCay := myGui.AddButton("x30 y195 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Trồng cây")
+    btnBonPhan := myGui.AddButton("x30 y232 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Bón phân")
+    btnTuoiNuoc := myGui.AddButton("x30 y269 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Tưới nước")
+    btnThuHoach := myGui.AddButton("x30 y306 w" guiCfg.sectionW " h" guiCfg.sectionBtnH, "Thu hoạch")
+
     myTab.UseTab(0)
 
     ; Main Tab
@@ -87,6 +94,12 @@ _gui_init() {
     btnTanCongHaiQuan.OnEvent("Click", (*) => _feature_tanconghaiquan())
     btnHdTT.OnEvent("Click", (*) => _feature_hoidapcothuong())
     btnDailyTaskAuto.OnEvent("Click", (*) => _feature_daily_task_auto())
+
+    ; Vườn ác ma tab
+    btnTrongCay.OnEvent("Click", (*) => _feature_trong_cay())
+    btnBonPhan.OnEvent("Click", (*) => _feature_bon_phan())
+    btnTuoiNuoc.OnEvent("Click", (*) => _feature_tuoi_nuoc())
+    btnThuHoach.OnEvent("Click", (*) => _feature_thu_hoach())
 
     btnStop.OnEvent("Click", (*) => _feature_stop())
     btnTest.OnEvent("Click", (*) => _feature_test())

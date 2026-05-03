@@ -27,6 +27,7 @@ _log_startup_error(msg) {
 #include features\tanconghaiquan.ahk
 #include features\hoidapcothuong.ahk
 #include features\haitacthongthai.ahk
+#include features\vuon_ac_ma.ahk
 #include features\giftcode.ahk
 #include features\register_event.ahk
 #include features\daily_task_auto.ahk
@@ -58,8 +59,34 @@ if (A_Args.Length >= 2 and A_Args[1] = "--httt-worker") {
     ExitApp()
 }
 
+if (A_Args.Length >= 3 and A_Args[1] = "--vuon-ac-ma-worker") {
+    hwnd := Integer(A_Args[2])
+    actionName := A_Args[3]
+    _feature_vuon_ac_ma_worker_entry(hwnd, actionName)
+    ExitApp()
+}
 
-_ocr_worker_cleanup_stale_runtime(_ocr_worker_init())
+ocrState := _ocr_worker_init()
+_ocr_worker_cleanup_stale_runtime(ocrState)
+
+try {
+    if _ocr_worker_ensure_ready() {
+        _ocr_worker_trace("INFO", "Startup OCR prewarm ready", Map(
+            "ready", true,
+            "mode", ocrState["workerMode"]
+        ))
+    } else {
+        _log_startup_error("Startup OCR prewarm failed: " . ocrState["lastError"])
+        _ocr_worker_trace("WARN", "Startup OCR prewarm failed", Map(
+            "ready", false,
+            "lastError", ocrState["lastError"],
+            "mode", ocrState["workerMode"]
+        ))
+    }
+} catch Error as err {
+    _log_startup_error("Startup OCR prewarm exception: " . err.Message)
+    try _ocr_worker_trace("ERROR", "Startup OCR prewarm exception", Map("err", err.Message, "what", err.What))
+}
 
 ; Pre-load vocab cache for Q&A features
 

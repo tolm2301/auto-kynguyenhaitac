@@ -5,7 +5,7 @@ _feature_reset_running_status() {
 }
 
 _feature_stop() {
-    global g_dailyStopFile, g_dailyWorkerPids, g_bossWorkerPids
+    global g_dailyStopFile, g_dailyWorkerPids, g_bossWorkerPids, g_vuonAcMaWorkerPid, g_vuonAcMaWorkerPids
 
     _feature_reset_running_status()
 
@@ -20,6 +20,22 @@ _feature_stop() {
 
     if (IsSet(g_bossWorkerPids))
         _boss_stop_worker_processes(g_bossWorkerPids)
+
+    if (IsSet(g_vuonAcMaWorkerPids)) {
+        for pid in g_vuonAcMaWorkerPids {
+            if ProcessExist(pid) {
+                try ProcessClose(pid)
+            }
+        }
+        g_vuonAcMaWorkerPids := []
+    }
+
+    if (IsSet(g_vuonAcMaWorkerPid) and g_vuonAcMaWorkerPid > 0) {
+        if ProcessExist(g_vuonAcMaWorkerPid) {
+            try ProcessClose(g_vuonAcMaWorkerPid)
+        }
+        g_vuonAcMaWorkerPid := 0
+    }
 
     g_dailyWorkerPids := []
     g_dailyStopFile := ""

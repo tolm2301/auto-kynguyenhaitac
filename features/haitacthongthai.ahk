@@ -76,7 +76,7 @@ _httt_run_round(roundIndex := 1, roundCount := 1) {
     }
 
     questionHwnd := hwnds[1]
-    questionText := _ocr_from_bit_map(questionHwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
+    questionText := _httt_read_question(questionHwnd)
     questionText := _httt_clean_question_text(questionText)
 
     _httt_log("OCR question | round=" . roundIndex . "/" . roundCount . " | hwnd=" . questionHwnd . " | text=" . questionText)
@@ -257,7 +257,7 @@ _httt_get_base_dir() {
 }
 
 _httt_read_question(hwnd) {
-    return _ocr_from_bit_map(hwnd, 294, 190, 977, 340)
+    return _ocr_from_bit_map(hwnd, httt_question_pos[1], httt_question_pos[2], httt_question_pos[3], httt_question_pos[4])
 }
 
 
@@ -281,7 +281,7 @@ _httt_read_option_map(hwnd, bestMatchAnswer := "") {
 
     for letter in ["A", "B", "C", "D"] {
         opt := cfg[letter]
-        optionMap[letter] := _ocr_from_bit_map(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2, 0, 2.5)
+        optionMap[letter] := _ocr_from_bit_map(hwnd, opt.ocrX1, opt.ocrY1, opt.ocrX2, opt.ocrY2, 0, 1.8)
     }
 
     _httt_log("OCR options | A=[" . optionMap["A"] . "] B=[" . optionMap["B"] . "] C=[" . optionMap["C"] . "]" . "] D=[" . optionMap["D"] . "]")
