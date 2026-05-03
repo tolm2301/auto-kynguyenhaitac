@@ -1,5 +1,6 @@
+#Include ..\utils\ui_config.ahk
 
-global hoat_dong_button := [662, 39]
+global hoat_dong_button := _ui_get_hoat_dong_button()
 
 _now_hour() {
     return Integer(getHour())
